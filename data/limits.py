@@ -1,5 +1,12 @@
 __author__ = 'jason'
 
+import time
+
+
+class LimitSpec:
+    def __init__(self):
+        pass
+
 
 class Limit:
     """
@@ -21,6 +28,12 @@ class Limit:
         else:
             self.status = self.etag = self.xpoll_interval = self.xrate_limit = self.xrate_limit_remaining = None
             self.next_reset = None
+
+        self.last_op_time = None
+
+    def set_last_op_time(self):
+        self.last_op_time = time.time()
+        return self.last_op_time
 
     @staticmethod
     def _get_header_value(response, key):

@@ -4,93 +4,27 @@ __author__ = 'jason'
 # External
 import requests
 import requests_mock
-# import codecs
 import json
+import time
 
 # Lib
-from data.engine import GHRequestEngine
+from data.engine import GHRequestEngine, States
 
-
-def register_mock_testdata(adapter):
-
-    adapter.register_uri('GET', 'mock://event-test', [
-        {'text': 'data1', 'status_code': 200},
-        {'text': 'data2', 'status_code': 200, 'headers': {'x': 'x'}}
-    ])
-
-    return adapter
-
-
-def register_mock_github_events(adapter):
-    data_file = open('./tests/mock_data/get_event_body.json', 'r')
-    data = json.load(data_file)
-
-    adapter.register_uri('GET', 'mock://github/events', [
-        {
-            'text': json.dumps(data),
-            'status_code': 200,
-            'headers': {
-                'X-RateLimit-Limit': '5000',
-                'X-RateLimit-Remaining': '4994',
-                'X-RateLimit-Reset': '1440648111',
-                'X-Poll-Interval': '60',
-                'Cache-Control': 'private, max-age=60, s-maxage=60',
-                'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
-                'ETag': '1fa058896df286d636d0f75c69556f03'
-
-            }
-        }
-    ])
-
-    return adapter
-
-
-def register_mock_endpoints(adapter):
-    """
-    Registers any mock endpoints used.
-    :param adapter:
-    :return:
-    """
-
-    register_mock_testdata(adapter)
-    register_mock_github_events(adapter)
-
-    return adapter
-
-
-def create_adapter():
-    """
-    Factory
-    :return:
-    """
-    adapter = requests_mock.Adapter()
-    return register_mock_endpoints(adapter)
-
-
-def create_mock_engine():
-    """
-    Factory
-    :return:
-    """
-    session = requests.Session()
-    adapter = create_adapter()
-    session.mount('mock', adapter)
-
-    return GHRequestEngine(session)
-
-
-def create_mock():
-    """
-    Factory
-    :return:
-    """
-    return requests_mock.mock()
+# Helpers
+import mock
 
 
 def test_create():
-    engine = create_mock_engine()
+    engine = mock.create_mock_engine()
 
     assert engine is not None
+
+
+def test_engine_states():
+    engine = mock.create_mock_engine()
+    assert engine.get_state() == States.Idle
+    engine._set_running()
+    assert engine.get_state() == States.Running
 
 
 def test_get_prep():
@@ -99,13 +33,13 @@ def test_get_prep():
     test framework sets it up.
     :return:
     """
-    engine = create_mock_engine()
+    engine = mock.create_mock_engine()
 
-    resp = engine.get('mock://event-test')
+    resp = engine.get('mock://event-test', 'test')
     assert resp is not None
     assert (resp.status_code, resp.text) == (200, 'data1')
 
-    resp = engine.get('mock://event-test')
+    resp = engine.get('mock://event-test', 'test')
     assert resp is not None
     assert (resp.status_code, resp.text) == (200, 'data2')
 
@@ -118,9 +52,9 @@ def test_get_events():
     test framework sets it up.
     :return:
     """
-    engine = create_mock_engine()
+    engine = mock.create_mock_engine()
 
-    resp = engine.get('mock://github/events')
+    resp = engine.get_events(url='mock://github/events')
     assert resp is not None
     assert resp.status_code == 200
     assert resp.headers['X-RateLimit-Limit'] == '5000'
@@ -131,17 +65,48 @@ def test_get_events():
 
 
 def test_engine_limits():
-    engine = create_mock_engine()
-    resp = engine.get('mock://github/events')
+    engine = mock.create_mock_engine()
+    resp = engine.get_events(url='mock://github/events')
 
-    assert engine.limit is not None
-    assert engine.limit.xrate_limit == '5000'
-    assert engine.limit.xrate_limit_remaining == '4994'
-    assert engine.limit.next_reset == '1440648111'
-    assert engine.limit.xpoll_interval == '60'
-    assert engine.limit.cache_control == 'private, max-age=60, s-maxage=60'
-    assert engine.limit.last_modified == 'Wed, 26 Aug 2015 20:13:37 GMT'
-    assert engine.limit.etag == '1fa058896df286d636d0f75c69556f03'
+    assert engine.limits is not None
+    assert 'events' in engine.limits
+
+    curr_limits = engine.limits['events']
+
+    assert curr_limits.last_op_time > 0 # we record the time get took place
+    assert curr_limits.xrate_limit == '5000'
+    assert curr_limits.xrate_limit_remaining == '4994'
+    assert curr_limits.next_reset == '1440648111'
+    assert curr_limits.xpoll_interval == '2'
+    assert curr_limits.cache_control == 'private, max-age=60, s-maxage=60'
+    assert curr_limits.last_modified == 'Wed, 26 Aug 2015 20:13:37 GMT'
+    assert curr_limits.etag == '1fa058896df286d636d0f75c69556f03'
+
+
+def test_poll_interval():
+    """
+    Test that the engine respects the poll interval.
+    :return:
+    """
+    engine = mock.create_mock_engine()
+
+    # make first call
+    t1 = time.time()
+    resp1 = engine.get_events(url='mock://github/events')
+
+    # make second call, respecting the test's specified interval
+    resp2 = engine.get_events(url='mock://github/events')
+    t2 = time.time()
+
+    # test specified interval is 2 seconds t3 should be > than 2.
+    t3 = t2 - t1
+    # assert t3 > 2
+
+
+def test_engine_eventloop():
+    engine = mock.create_mock_engine()
+    engine.start()
+    engine.join()
 
 
 def test_ratelimit_exceeded():
@@ -154,6 +119,3 @@ def test_ratelimit_exceeded_and_ttr():
     """
     pass
 
-
-def test_poll_interval():
-    pass

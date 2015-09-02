@@ -2,8 +2,14 @@ TODO
 ----
 
 - [*] Read from the github firehose
-    - [*] create request engine class
-    - [*] mock responses for tests
+    - [x] ~~create request engine class~~ merge into actors
+    - [x] create worker
+    - [x] mock responses for tests
+    - [*] new request server
+    - [*] limit spec
+    - [ ] request worker, using limit spec
+    - [ ] add to request server
+    - [ ] tests
     - [ ] check for etag
     - [ ] check for ratelimit
     - [ ] check for poll rate

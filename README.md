@@ -29,6 +29,10 @@ pip install -U requests
 pip install -U CacheControl
 pip install -U pytest
 pip install -U requests_mock
+pip install -U futures
+pip install -U greenlet
+pip install -U gevent
+pip install -U enum34
 ```
 
 ## Tests
