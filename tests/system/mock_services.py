@@ -11,10 +11,18 @@ class TestWorker(BaseService):
     def __init__(self, name, loop_interval=.5):
         BaseService.__init__(self, name)
         self.loop_interval = loop_interval
+        self.ack = False
 
     def event_loop(self):
-        while True:
+        """
+        Basic event loop that runs once with the specified interval
+        :return:
+        """
+        while self.ack is False:
             gevent.sleep(self.loop_interval)
+            output_service = self.get_directory_service_proxy().get_service("mock-output-service")
+            output_service.put("test-worker-work-result")
+            self.ack = True
 
 
 class MockOutputService(OutputService):

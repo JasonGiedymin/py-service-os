@@ -112,6 +112,32 @@ def test_output_service_loop():
     assert mock_output_service.get_state() == BaseStates.Idle
 
 
+def test_output_service_write():
+    # create ServiceManager and add services
+    service_manager = ServiceManager("service-manager")
+
+    # add worker
+    worker_name = "test-worker-1"
+    test_worker_1 = TestWorker(worker_name)
+    service_manager.add_service(test_worker_1, worker_name)
+
+    # add output service
+    mock_output_service = MockOutputService()
+    service_manager.add_service(mock_output_service, "mock-output-service")
+
+    # join and block, waiting for event loop to execute once
+    # and then exits. Mock manually controls the event loop.
+    # Manually starting services rather than using service_manager
+    gevent.joinall([test_worker_1.start(), mock_output_service.start()])
+
+    # the services ran and I expect the test worker to have queried
+    # the directory proxy and found the output service, writing to it.
+    result = mock_output_service.get()
+    assert result is not None
+    assert result == "test-worker-work-result"
+    assert mock_output_service.size() == 0
+
+
 def test_scheduler():
     scheduler = Scheduler("scheduler")
     assert scheduler.get_services_count() == 0

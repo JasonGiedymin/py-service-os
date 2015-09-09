@@ -105,6 +105,16 @@ class OutputService(BaseService):
         return self._queue.put(item, block, timeout)
 
     def get(self, block=True, timeout=None):
+        """
+        Gets from the backing Queue.
+        If calling get on empty Queue, it will block
+        until Queue actually has contents to return.
+        If that is undesired set block=False to prevent
+        greenlet blocking.
+        :param block:
+        :param timeout:
+        :return:
+        """
         return self._queue.get(block, timeout)
 
     def size(self):
@@ -136,6 +146,9 @@ class DirectoryService(BaseService):
 
     def get_service(self, name):
         return self._service_manager_directory.get(name)
+
+    def get_outputservice(self):
+        return self._service_manager_directory.get("output-service")
 
 
 class TestWorker(BaseService):

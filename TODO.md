@@ -9,7 +9,7 @@ TODO
     - [x] add directory service to service manager
     - [x] integrate directory service to each service
 - [x] Access directory within each service
-- [ ] Unit Test proving outputservice access from a service
+- [x] Unit Test proving outputservice access from a service
 - [ ] Create service checker
     - [ ] allow stop of service and checker keeps up
 
