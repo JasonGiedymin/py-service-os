@@ -2,26 +2,24 @@ __author__ = 'jason'
 
 
 # External
-import requests
-import requests_mock
 import json
 import time
 
 # Lib
-from data.engine import GHRequestEngine, States
+from data.engine import States
 
 # Helpers
-import mock
+import mock_requests
 
 
 def test_create():
-    engine = mock.create_mock_engine()
+    engine = mock_requests.create_mock_engine()
 
     assert engine is not None
 
 
 def test_engine_states():
-    engine = mock.create_mock_engine()
+    engine = mock_requests.create_mock_engine()
     assert engine.get_state() == States.Idle
     engine._set_running()
     assert engine.get_state() == States.Running
@@ -33,7 +31,7 @@ def test_get_prep():
     test framework sets it up.
     :return:
     """
-    engine = mock.create_mock_engine()
+    engine = mock_requests.create_mock_engine()
 
     resp = engine.get('mock://event-test', 'test')
     assert resp is not None
@@ -52,7 +50,7 @@ def test_get_events():
     test framework sets it up.
     :return:
     """
-    engine = mock.create_mock_engine()
+    engine = mock_requests.create_mock_engine()
 
     resp = engine.get_events(url='mock://github/events')
     assert resp is not None
@@ -65,7 +63,7 @@ def test_get_events():
 
 
 def test_engine_limits():
-    engine = mock.create_mock_engine()
+    engine = mock_requests.create_mock_engine()
     resp = engine.get_events(url='mock://github/events')
 
     assert engine.limits is not None
@@ -88,7 +86,7 @@ def test_poll_interval():
     Test that the engine respects the poll interval.
     :return:
     """
-    engine = mock.create_mock_engine()
+    engine = mock_requests.create_mock_engine()
 
     # make first call
     t1 = time.time()
@@ -100,11 +98,11 @@ def test_poll_interval():
 
     # test specified interval is 2 seconds t3 should be > than 2.
     t3 = t2 - t1
-    # assert t3 > 2
+    assert t3 > 2
 
 
 def test_engine_eventloop():
-    engine = mock.create_mock_engine()
+    engine = mock_requests.create_mock_engine()
     engine.start()
     engine.join()
 

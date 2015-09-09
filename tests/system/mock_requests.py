@@ -19,7 +19,7 @@ def register_mock_testdata(adapter):
 
 
 def register_mock_github_events(adapter):
-    data_file = open('./tests/mock_data/get_event_body.json', 'r')
+    data_file = open('./tests/system/mock_data/get_event_body.json', 'r')
     data = json.load(data_file)
 
     adapter.register_uri('GET', 'mock://github/events', [

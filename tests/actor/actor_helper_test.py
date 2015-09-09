@@ -2,10 +2,10 @@
 import gevent
 
 # Lib
-from data.actors import Actor, Directory, WorkerSupervisor, Scheduler, Messages, States, RoundRobinIndexer
+from data.actors import Actor, Directory, Supervisor, ActorMessages, ActorStates, RoundRobinIndexer
+from data.actors.helpers import Scheduler
 
 # Helpers
-import mock
 
 
 class MockActor(Actor):
@@ -73,28 +73,8 @@ def test_directory():
     assert(mock_actor_2 == directory.get_actor("mock-actor-2"))
 
 
-def test_worker_supervisor():
-    worker1 = MockActor(1)
-    worker2 = MockActor(2)
-    worker3 = MockActor(3)
-    workers = [worker1, worker2, worker3]
-
-    # supervisor by default uses roundrobin
-    # on manually calling recieve I expect work
-    # to be evenly distributed.
-    supervisor = WorkerSupervisor("supervisor", workers)
-
-    # mock actors have convience method if they receive work
-    # from the supervisor
-    supervisor.receive("test")
-    assert worker1.received()
-
-    supervisor.receive("test")
-    assert worker2.received()
-
-
 def test_worker_scheduler():
-    curr_supervisor = WorkerSupervisor('supervisor', [MockActor(1), MockActor(2)])
+    curr_supervisor = Supervisor('supervisor', [MockActor(1), MockActor(2)])
 
     curr_directory = Directory()
     curr_directory.add_actor('supervisor', curr_supervisor)
@@ -104,13 +84,13 @@ def test_worker_scheduler():
     # -- Test receive() --
     # blocks until greenlet is complete
     # --> Done
-    gevent.joinall([gevent.spawn(scheduler.receive, Messages.Done)])
+    gevent.joinall([gevent.spawn(scheduler.receive, ActorMessages.Done)])
     assert scheduler.did_ack
     # --> Start
-    gevent.joinall([gevent.spawn(scheduler.receive, Messages.Start)])
-    assert scheduler.state == States.Running
+    gevent.joinall([gevent.spawn(scheduler.receive, ActorMessages.Start)])
+    assert scheduler.state == ActorStates.Running
     assert scheduler.did_loop
     assert scheduler.supervisor == curr_supervisor
     # --> Stop
-    gevent.joinall([gevent.spawn(scheduler.receive, Messages.Stop)])
-    assert scheduler.state == States.Stopped
+    gevent.joinall([gevent.spawn(scheduler.receive, ActorMessages.Stop)])
+    assert scheduler.state == ActorStates.Stopped

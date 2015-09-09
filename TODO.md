@@ -1,5 +1,17 @@
 TODO
 ----
+- [x] Create Scheduler
+- [x] Create Service manager
+- [x] Create Services
+- [x] Create Output Reader Service
+    - [x] Create Output Service(s)
+- [x] Create directory service
+    - [x] add directory service to service manager
+    - [x] integrate directory service to each service
+- [x] Access directory within each service
+- [ ] Unit Test proving outputservice access from a service
+- [ ] Create service checker
+    - [ ] allow stop of service and checker keeps up
 
 - [*] Read from the github firehose
     - [x] ~~create request engine class~~ merge into actors
