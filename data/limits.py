@@ -18,11 +18,12 @@ class Limit:
         if response is not None:
             # Note, that all these are case-sensitive and directly as they are from requests lib
             self.status_code = response.status_code
-            self.etag = self._get_header_value(response, 'ETag')
             self.xpoll_interval = self._get_header_value(response, 'X-Poll-Interval')
             self.xrate_limit = self._get_header_value(response, 'X-RateLimit-Limit')
             self.xrate_limit_remaining = self._get_header_value(response, 'X-RateLimit-Remaining')
             self.next_reset = self._get_header_value(response, 'X-RateLimit-Reset')
+
+            self.etag = self._get_header_value(response, 'ETag')
             self.cache_control = self._get_header_value(response, 'Cache-Control')
             self.last_modified = self._get_header_value(response, 'Last-Modified')
         else:

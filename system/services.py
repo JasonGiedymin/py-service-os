@@ -40,7 +40,7 @@ class BaseService:
         return self.greenlet
 
     def stop(self):
-        print "%s - Stopping..." % self.name
+        # print "%s - Stopping..." % self.name
         gevent.kill(self.greenlet)
         self._service_state = BaseStates.Stopped
         return self.greenlet

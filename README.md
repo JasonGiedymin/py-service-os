@@ -33,6 +33,7 @@ pip install -U futures
 pip install -U greenlet
 pip install -U gevent
 pip install -U enum34
+pip install -U scales
 ```
 
 ## Tests

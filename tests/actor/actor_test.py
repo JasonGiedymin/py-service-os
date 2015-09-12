@@ -1,7 +1,7 @@
 # Ext
 
 # Lib
-from data.actors import Actor, Supervisor
+from system.actors import Actor, Supervisor
 
 
 # Helpers

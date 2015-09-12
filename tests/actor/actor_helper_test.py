@@ -2,16 +2,17 @@
 import gevent
 
 # Lib
-from data.actors import Actor, Directory, Supervisor, ActorMessages, ActorStates, RoundRobinIndexer
-from data.actors.helpers import Scheduler
+from system.actors import Actor, Supervisor, ActorMessages, ActorStates, RoundRobinIndexer
+from system.actors import Directory
+from system.actors import Scheduler
 
 # Helpers
 
 
 class MockActor(Actor):
     def __init__(self, actor_id):
-        Actor.__init__(self)
-        self.name = "mock-actor-%d" % actor_id
+        name = "mock-actor-%d" % actor_id
+        Actor.__init__(self, name)
         self.start = False
         self.message = None
 

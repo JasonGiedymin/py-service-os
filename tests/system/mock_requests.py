@@ -5,7 +5,8 @@ import json
 import time
 
 # Lib
-from data.engine import GHRequestEngine, States
+from data.engine import GHRequestEngine
+from services.request import RequestMachine
 
 
 def register_mock_testdata(adapter):
@@ -66,6 +67,7 @@ def create_adapter():
 
 def create_mock_engine():
     """
+    Deprecated
     Factory
     :return:
     """
@@ -74,6 +76,13 @@ def create_mock_engine():
     session.mount('mock', adapter)
 
     return GHRequestEngine(session)
+
+
+def create_mock_request_machine(request_spec):
+    session = requests.Session()
+    adapter = create_adapter()
+    session.mount('mock', adapter)
+    return RequestMachine(session, request_spec)
 
 
 def create_mock():

@@ -125,10 +125,19 @@ def test_output_service_write():
     mock_output_service = MockOutputService()
     service_manager.add_service(mock_output_service, "mock-output-service")
 
+    assert test_worker_1.get_state() == BaseStates.Idle
+    assert mock_output_service.get_state() == BaseStates.Idle
+
     # join and block, waiting for event loop to execute once
     # and then exits. Mock manually controls the event loop.
     # Manually starting services rather than using service_manager
     gevent.joinall([test_worker_1.start(), mock_output_service.start()])
+
+    # Assert that state is started. State will not be stopped
+    # or idle because the services were manually called. Except
+    # for the Mock service which will be idle. See the code.
+    assert test_worker_1.get_state() == BaseStates.Started
+    assert mock_output_service.get_state() == BaseStates.Idle
 
     # the services ran and I expect the test worker to have queried
     # the directory proxy and found the output service, writing to it.

@@ -1,7 +1,7 @@
 # Ext
 
 # Lib
-from data.actors.directory import DirectoryActor
+from system.actors import DirectoryActor
 
 
 # Helpers

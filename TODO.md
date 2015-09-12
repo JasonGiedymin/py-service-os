@@ -10,7 +10,18 @@ TODO
     - [x] integrate directory service to each service
 - [x] Access directory within each service
 - [x] Unit Test proving outputservice access from a service
-- [ ] Create service checker
+- [*] working request service
+    - [x] request service
+    - [x] request spec or limit spec?
+    - [x] request machine
+    - [x] request machine states
+    - [*] python stats?
+    - [ ] inherited stats /os/services/request_service/request_machine/
+- [ ] rest api to see stats
+- [ ] logging
+- [ ] stop only when work is complete
+- [ ] pool request services using gevent pool
+- [?] Create service checker
     - [ ] allow stop of service and checker keeps up
 
 - [*] Read from the github firehose
