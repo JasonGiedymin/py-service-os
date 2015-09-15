@@ -34,6 +34,8 @@ pip install -U greenlet
 pip install -U gevent
 pip install -U enum34
 pip install -U scales
+pip install -U flask
+pip install -U pytest-flask
 ```
 
 ## Tests

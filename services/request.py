@@ -2,6 +2,7 @@ __author__ = 'jason'
 
 from enum import Enum
 from greplin import scales
+from greplin.scales import meter
 from uuid import uuid4
 
 from system.services import BaseService, BaseStates
@@ -16,7 +17,7 @@ class RequestHeaders:
         self.interval = interval
         self.rate_limit = limit
         self.rate_limit_remaining = limit_remaiming
-        self.reset = reset
+        self.time_to_reset = reset
         self.etag = 'ETag'
         self.cache_control = 'Cache-Control'
         self.last_modified = 'Last-Modified'
@@ -30,17 +31,35 @@ class RequestSpec:
     """
     def __init__(self,
                  uri=None,
-                 interval=60,
+                 interval=1,
                  rate_limit=1,
                  rate_limit_remaining=1,
-                 rate_limit_ttr=60,
+                 time_to_reset=60,
                  headers=RequestHeaders()):
         self.uri = uri
         self.interval = interval
         self.rate_limit = rate_limit
         self.rate_limit_remaining = rate_limit_remaining
-        self.rate_limit_ttr = rate_limit_ttr  # ttr = time till reset
+        self.time_to_reset = time_to_reset  # ttr = time till reset
         self.headers = headers
+
+
+class RequestTimings:
+    """
+    Object to hold current request timings.
+    """
+    def __init__(self, spec):
+        self.spec = spec
+        self.interval = str(spec.interval)
+        self.rate_limit = str(spec.rate_limit)
+        self.rate_limit_remaining = str(spec.rate_limit_remaining)
+        self.time_to_reset = str(spec.time_to_reset)  # ttr = time till reset
+
+    def update(self, resp):
+        self.interval = str(resp.headers.get(self.spec.headers.interval))
+        self.rate_limit = str(resp.headers.get(self.spec.headers.rate_limit))
+        self.rate_limit_remaining = str(resp.headers.get(self.spec.headers.rate_limit_remaining))
+        self.time_to_reset = str(resp.headers.get(self.spec.headers.time_to_reset))
 
 
 class RequestService(BaseService):
@@ -67,17 +86,31 @@ class RequestMachine:
     after stopping, and it would still use the cached
     limits.
     """
+
+    # state averages from 75, 95, 98, 99, 999,
+    # min, max, median, mean, and stddev
+    latency = scales.PmfStat('latency')
+
+    # timing for 1/5/15 minute averages
+    latency_window = meter.MeterStat('latency_window')
+
     def __init__(self, session, request_spec):
-        self.uuid = uuid4()
-        self.stats = scales.collection('/request-machine/%s' % self.uuid, scales.PmfStat('latency'))
-        self.session = session
-        self.request_spec = request_spec
-        self.cache = {}  # general cache
-        self.state = RequestMachineStates.Idle
+        # BaseService.__init__(self)
+        self.uuid = uuid4()  # unit identifier
+        scales.init(self, '/request-machine/%s' % self.uuid)
+        # self.register_child_stat('/request-machine/%s' % self.uuid)
+        self.session = session  # request http session
+        self.request_spec = request_spec  # request spec with spec of call
+        self.timings = RequestTimings(request_spec)
+        self.state = RequestMachineStates.Idle  # current state
 
     def get(self):
         self.state = RequestMachineStates.Processing
 
-        with self.stats.latency.time():
+        with self.latency.time():
+            self.latency_window.mark()
             resp = self.session.get(self.request_spec.uri)
+            self.timings.update(resp)
+            self.state = RequestMachineStates.Idle
             return resp
+

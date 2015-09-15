@@ -3,6 +3,7 @@ __author__ = 'jason'
 # external
 import gevent
 from gevent.queue import Queue
+from greplin import scales
 
 # lib
 from services import BaseService, DirectoryService
@@ -11,7 +12,10 @@ from strategies import RoundRobinIndexer
 
 
 class ServiceManager(BaseService):
+    family_latency = scales.HistogramAggregationStat('latency')
+
     def __init__(self, name):
+        scales.init(self, '/service-manager')
         BaseService.__init__(self, name)
         self._directory = {}
         self.started_services = Queue()
@@ -62,6 +66,7 @@ class ServiceManager(BaseService):
 
 
 class Scheduler(BaseService):
+
     def event_loop_next(self):
         return EventLoopStates(self.event_loop_state.next())._name_
 

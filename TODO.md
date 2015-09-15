@@ -1,5 +1,7 @@
 TODO
 ----
+
+## v0.0.1.0 - System
 - [x] Create Scheduler
 - [x] Create Service manager
 - [x] Create Services
@@ -15,32 +17,66 @@ TODO
     - [x] request spec or limit spec?
     - [x] request machine
     - [x] request machine states
-    - [*] python stats?
-    - [ ] inherited stats /os/services/request_service/request_machine/
+    - [x] python stats?
+    - [*] inherited stats /os/services/request_service/request_machine/
+        - [x] latency to base service
+        - [x] latency window to base service => part of BaseService
+              but may not work until served?
+        - [x] reconsider request machine inherit baseservice?
+        - [!] fix hierarchical stats with initChild
+        - [!] see stats from scheduler onward => see above
+        - [!] add to base service state stats like in example => need
+              above fixed first, else can't aggregate data.
+- [x] add @classmethod => not much to bind to a class with here
+
+## v0.0.2.0 - RequestMachine
+- [*] Read from the github firehose
+    - [x] ~~create request engine class~~ merge into actors
+    - [x] create worker
+    - [x] mock responses for tests
+    - [x] new request getter (RequestMachine)
+    - [x] limit spec
+    - [x] ~~dict of timings which to check and use to allow or prevent
+          running again~~
+    - [x] Timings object to keep timings
+    - [x] Update timings from resp
+    - [ ] subsequent calls to RequestMachine.get() should honor the timings
+    - [ ] add RequestMachine to RequestService
+    - [ ] check for etag?
+    - [ ] check for ratelimit reached?
+    - [ ] check for poll rate?
+    - [ ] check for reset time to ensure? Maybe not, move this to bucket.
+    - [?] make into request adapter??
+    - [ ] Ensure cache/stats are recorded for above, requests, etc...
+    - [ ] consider timings time based checking?
+
+## v0.0.3.0 - UniqueClass
+- [ ] UniqueService class
+- [ ] Remove uuid from BaseService to UniqueService and inherit from it
+
+## v0.0.4.0 - Run System
+- [ ] Create app.py and run system
+
+## v0.0.5.0 - Pub to Kafka
+- [ ] Service to publish data to Kafka raw
+
+## v0.0.x.0 - Rest Live Data
+- [ ] Logging
 - [ ] rest api to see stats
-- [ ] logging
+- [ ] logging to graphite
+    - [ ] revisit greplin/Cue/scales and turn on gaphited data
+
+## v0.0.x.0 - Service Supervisors and Uptime
+- [ ] Health endpoint
 - [ ] stop only when work is complete
 - [ ] pool request services using gevent pool
 - [?] Create service checker
     - [ ] allow stop of service and checker keeps up
 
-- [*] Read from the github firehose
-    - [x] ~~create request engine class~~ merge into actors
-    - [x] create worker
-    - [x] mock responses for tests
-    - [*] new request server
-    - [*] limit spec
-    - [ ] request worker, using limit spec
-    - [ ] add to request server
-    - [ ] tests
-    - [ ] check for etag
-    - [ ] check for ratelimit
-    - [ ] check for poll rate
-    - [ ] check for reset time?
-    - [ ] make into request adapter?
-- [ ] Publishes the data to Kafka raw
-- [ ] Stats endpoint
-- [ ] Health endpoint
-- [ ] Logging
-- [ ] Commandline params
+## v0.0.x.0 - Cleanup
 - [ ] Config file
+- [ ] Commandline params
+
+
+## Bucket
+- [ ] ...

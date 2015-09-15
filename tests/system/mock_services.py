@@ -10,6 +10,7 @@ from system.services import OutputService, BaseStates, BaseService
 class TestWorker(BaseService):
     def __init__(self, name, loop_interval=.5):
         BaseService.__init__(self, name)
+        self.register_child_stat(name)
         self.loop_interval = loop_interval
         self.ack = False
 
@@ -27,7 +28,9 @@ class TestWorker(BaseService):
 
 class MockOutputService(OutputService):
     def __init__(self):
-        OutputService.__init__(self, "mock-output-service")
+        name = "mock-output-service"
+        OutputService.__init__(self, name)
+        self.register_child_stat(name)
         self.event_loop_ack = False
 
     def event_loop(self):

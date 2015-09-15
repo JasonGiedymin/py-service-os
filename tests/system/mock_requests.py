@@ -8,6 +8,11 @@ import time
 from data.engine import GHRequestEngine
 from services.request import RequestMachine
 
+GLOBAL_MOCK_REQUEST_INTERVAL = '2'
+GLOBAL_MOCK_REQUEST_RATELIMIT = '5000'
+GLOBAL_MOCK_REQUEST_REMAINING = '4994'
+GLOBAL_MOCK_REQUEST_RESET = '1440648111'
+
 
 def register_mock_testdata(adapter):
 
@@ -28,10 +33,10 @@ def register_mock_github_events(adapter):
             'text': json.dumps(data),
             'status_code': 200,
             'headers': {
-                'X-RateLimit-Limit': '5000',
-                'X-RateLimit-Remaining': '4994',
-                'X-RateLimit-Reset': '1440648111',
-                'X-Poll-Interval': '2',
+                'X-RateLimit-Limit': GLOBAL_MOCK_REQUEST_RATELIMIT,
+                'X-RateLimit-Remaining': GLOBAL_MOCK_REQUEST_REMAINING,
+                'X-RateLimit-Reset': GLOBAL_MOCK_REQUEST_RESET,
+                'X-Poll-Interval': GLOBAL_MOCK_REQUEST_INTERVAL,
                 'Cache-Control': 'private, max-age=60, s-maxage=60',
                 'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
                 'ETag': '1fa058896df286d636d0f75c69556f03'
@@ -76,6 +81,13 @@ def create_mock_engine():
     session.mount('mock', adapter)
 
     return GHRequestEngine(session)
+
+
+def create_mock_session():
+    session = requests.Session()
+    adapter = create_adapter()
+    session.mount('mock', adapter)
+    return session
 
 
 def create_mock_request_machine(request_spec):

@@ -1,7 +1,10 @@
 __author__ = 'jason'
 
+from uuid import uuid4
 import gevent
 from gevent.queue import Queue
+from greplin import scales
+from greplin.scales import meter
 
 from states import BaseStates
 from exceptions import IdleActionException
@@ -18,13 +21,28 @@ class BaseService:
     necessary.
     """
 
+    # state averages from 75, 95, 98, 99, 999,
+    # min, max, median, mean, and stddev
+    latency = scales.PmfStat('latency')
+
+    # timing for 1/5/15 minute averages
+    latency_window = meter.MeterStat('latency_window')
+
     def event_loop(self):
         """
         Override
         """
+        # while True:
+        #     with self.latency.time():
+        #         self.latency_window.mark()
+        #         # do some work here
+        #         # sleep or keep going
         pass
 
     def __init__(self, name="base-service", directory_proxy=None):
+        self.uuid = uuid4()
+        scales.init(self, '/%s/%s' % (name, self.uuid))
+
         # print "%s - Init" % name
         self.name = name
         self.greenlet = None
@@ -32,6 +50,9 @@ class BaseService:
 
         # directory service proxy
         self._directory_proxy = directory_proxy
+
+    def register_child_stat(self, name):
+        scales.initChild(self, name)
 
     def start(self):
         # print "%s - Starting..." % self.name
