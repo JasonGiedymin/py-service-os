@@ -12,6 +12,8 @@ GLOBAL_MOCK_REQUEST_INTERVAL = '2'
 GLOBAL_MOCK_REQUEST_RATELIMIT = '5000'
 GLOBAL_MOCK_REQUEST_REMAINING = '4994'
 GLOBAL_MOCK_REQUEST_RESET = '1440648111'
+GLOBAL_MOCK_REQUEST_RESET2 = '1440649111'
+GLOBAL_MOCK_REQUEST_ETAG1 = '1fa058896df286d636d0f75c69556f03'
 
 
 def register_mock_testdata(adapter):
@@ -39,7 +41,24 @@ def register_mock_github_events(adapter):
                 'X-Poll-Interval': GLOBAL_MOCK_REQUEST_INTERVAL,
                 'Cache-Control': 'private, max-age=60, s-maxage=60',
                 'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
-                'ETag': '1fa058896df286d636d0f75c69556f03'
+                'ETag': GLOBAL_MOCK_REQUEST_ETAG1
+
+            }
+        }
+    ])
+
+    adapter.register_uri('GET', 'mock://github/events/withetag', [
+        {
+            'text': json.dumps(data),
+            'status_code': 304,
+            'headers': {
+                'X-RateLimit-Limit': GLOBAL_MOCK_REQUEST_RATELIMIT,
+                'X-RateLimit-Remaining': GLOBAL_MOCK_REQUEST_REMAINING,
+                'X-RateLimit-Reset': GLOBAL_MOCK_REQUEST_RESET,
+                'X-Poll-Interval': GLOBAL_MOCK_REQUEST_INTERVAL + '0',  # will be '20'
+                'Cache-Control': 'private, max-age=60, s-maxage=60',
+                'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
+                'ETag': GLOBAL_MOCK_REQUEST_ETAG1
 
             }
         }

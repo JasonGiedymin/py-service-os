@@ -40,7 +40,16 @@ TODO
           running again~~
     - [x] Timings object to keep timings
     - [x] Update timings from resp
-    - [ ] subsequent calls to RequestMachine.get() should honor the timings
+    - [x] send send_headers with get, using a copy of the data
+    - [x] subsequent calls should use etag
+    - [x] subsequent calls should evaluate response code of 304
+        - [x] if 304, the state should still be waiting
+    - [ ] work on can_request
+        - [ ] subsequent calls to RequestMachine.get() should honor the reset timings
+            - [ ] if the limit has been reached when remaining = 0
+        - [ ] subsequent calls to RequestMachine.get() should honor the limit remaining
+        - [ ] subsequent calls to RequestMachine.get() should honor the poll interval
+        - [ ] consider sleeping using the diff between (poll - last time)
     - [ ] add RequestMachine to RequestService
     - [ ] check for etag?
     - [ ] check for ratelimit reached?
@@ -49,6 +58,7 @@ TODO
     - [?] make into request adapter??
     - [ ] Ensure cache/stats are recorded for above, requests, etc...
     - [ ] consider timings time based checking?
+    - [ ] expand on RequestMachine.get() states, with state switch/lambdas
 
 ## v0.0.3.0 - UniqueClass
 - [ ] UniqueService class
