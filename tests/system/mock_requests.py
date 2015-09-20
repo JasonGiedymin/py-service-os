@@ -11,8 +11,10 @@ from services.request import RequestMachine
 GLOBAL_MOCK_REQUEST_INTERVAL = '2'
 GLOBAL_MOCK_REQUEST_RATELIMIT = '5000'
 GLOBAL_MOCK_REQUEST_REMAINING = '4994'
-GLOBAL_MOCK_REQUEST_RESET = '1440648111'
-GLOBAL_MOCK_REQUEST_RESET2 = '1440649111'
+# GLOBAL_MOCK_REQUEST_RESET = '1440648111'
+# GLOBAL_MOCK_REQUEST_RESET2 = '1440649111'
+GLOBAL_MOCK_REQUEST_RESET = str(time.time())
+GLOBAL_MOCK_REQUEST_RESET2 = str(time.time() + 1)
 GLOBAL_MOCK_REQUEST_ETAG1 = '1fa058896df286d636d0f75c69556f03'
 
 
@@ -60,6 +62,35 @@ def register_mock_github_events(adapter):
                 'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
                 'ETag': GLOBAL_MOCK_REQUEST_ETAG1
 
+            }
+        }
+    ])
+
+    adapter.register_uri('GET', 'mock://github/events/limits', [
+        {
+            'text': json.dumps(data),
+            'status_code': 200,
+            'headers': {
+                'X-RateLimit-Limit': '1',
+                'X-RateLimit-Remaining': '0',
+                'X-RateLimit-Reset': str(time.time()),
+                'X-Poll-Interval': '1',
+                'Cache-Control': 'private, max-age=60, s-maxage=60',
+                'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
+                'ETag': GLOBAL_MOCK_REQUEST_ETAG1
+            }
+        },
+        {
+            'text': json.dumps(data),
+            'status_code': 200,
+            'headers': {
+                'X-RateLimit-Limit': '1',
+                'X-RateLimit-Remaining': '0',
+                'X-RateLimit-Reset': str(time.time()),
+                'X-Poll-Interval': '1',
+                'Cache-Control': 'private, max-age=60, s-maxage=60',
+                'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
+                'ETag': GLOBAL_MOCK_REQUEST_ETAG1
             }
         }
     ])

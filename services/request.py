@@ -66,6 +66,9 @@ class RequestTimings:
         self.rate_limit_remaining = str(spec.rate_limit_remaining)
         self.time_to_reset = str(spec.time_to_reset)  # ttr = time till reset
         self.etag = spec.etag
+        self.last_request_timestamp = time()
+
+    def update_timestamp(self):
         self.last_request_timestamp = time()  # needed to enforce poll interval
 
     def update(self, resp):
@@ -73,6 +76,9 @@ class RequestTimings:
         Updates the timing object based on the response received from the
         server.
         """
+        # the lag in updating the timestamp is a nice security blanket
+        # to prevent to quick of a request
+        self.update_timestamp()
         self.interval = str(resp.headers.get(self.spec.headers.interval))
         self.rate_limit = str(resp.headers.get(self.spec.headers.rate_limit))
         self.rate_limit_remaining = str(resp.headers.get(self.spec.headers.rate_limit_remaining))
@@ -97,6 +103,8 @@ class RequestMachineStates(Enum):
     Stopped = 4
     WaitingForReset = 5
     WaitingForModifiedContent = 6  # if 304 Not Modified content via etag
+    WaitingForIntervalToPass = 7
+    EdgeCaseError = 8  # edge case that causes error
 
 
 class RequestMachine:
@@ -144,24 +152,60 @@ class RequestMachine:
         Call this if the remaining limit is 0.
         :return:
         """
-        return time() > float(self.timings.time_to_reset)
+        time_stamp = self.timings.last_request_timestamp
+        ttr = float(self.timings.time_to_reset)
+        now = time()
 
-    def _limit_reached(self):
-        return self.timings.rate_limit_remaining <= 0
-
-    def can_request(self):
-        # if the limit has been reached
-        if self._limit_reached:
-            # but if the limit reset window is passed
-            if self.limit_has_reset:
-                # a request can be made
-                return True
-
-            # else the machine must wait
+        # last time called was before or at the reset and
+        # time now is at or beyond the reset allow
+        if time_stamp <= ttr and now >= ttr:
+            print "ts less than ttr and now greater than ttr"
+            return True
+        # elif now >= ttr:
+        #     return True
+        else:
             return False
 
-        # otherwise a request can be made
-        return True
+    def limit_reached(self):
+        return int(self.timings.rate_limit_remaining) <= 0
+
+    def past_interval(self):
+        now = time()
+        last = self.timings.last_request_timestamp
+        estimated_interval_ts = last + float(self.timings.interval)
+        return now > estimated_interval_ts
+
+    def past_reset_window(self):
+        now = time()
+        reset_window = float(self.timings.time_to_reset)
+        return now >= reset_window
+
+    def request_made_since_reset_window(self):
+        timestamp = float(self.timings.last_request_timestamp)
+        reset_window = float(self.timings.time_to_reset)
+        return timestamp >= reset_window
+
+    def edge_case(self):
+        return self.limit_reached \
+               and self.past_reset_window() \
+               and self.request_made_since_reset_window()
+
+    def can_request(self):
+        if self.edge_case():
+            # TODO: log error here too
+            return False, RequestMachineStates.EdgeCaseError
+
+        # if the limit has been reached
+        if not self.limit_reached():
+            if self.past_interval():
+                return True
+            return False, RequestMachineStates.WaitingForIntervalToPass
+        else:  # limit reached
+            if self.past_reset_window():  # limit should be reset
+                if self.past_interval():
+                    return True
+                return False, RequestMachineStates.WaitingForIntervalToPass
+            return False, RequestMachineStates.WaitingForReset
 
     def _update(self, resp):
         self.timings.update(resp)
@@ -176,12 +220,21 @@ class RequestMachine:
     def _processing_state(self):
         self.state = RequestMachineStates.Processing
 
+    def reset_state(self):
+        self._idle_state()
+
+    def has_error_state(self):
+        return self.state == RequestMachineStates.Error \
+               or self.state == RequestMachineStates.EdgeCaseError
+
     def get(self):
-        if self.state == RequestMachineStates.Error:
+        if self.has_error_state():
             print "Cannot proceed, machine is in ERROR state. Please see the logs."
             return None
 
-        if self.limit_has_reset():
+        can_request, proposed_error_state = self.can_request()
+
+        if can_request:
             self._processing_state()
 
             with self.latency.time():
@@ -212,5 +265,6 @@ class RequestMachine:
                     self._idle_state()
                     return resp
         else:
-            self.state = RequestMachineStates.WaitingForReset
+            self.state = proposed_error_state
+            return None
 

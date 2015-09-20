@@ -44,13 +44,18 @@ TODO
     - [x] subsequent calls should use etag
     - [x] subsequent calls should evaluate response code of 304
         - [x] if 304, the state should still be waiting
-    - [ ] work on can_request
-        - [ ] subsequent calls to RequestMachine.get() should honor the reset timings
-            - [ ] if the limit has been reached when remaining = 0
-        - [ ] subsequent calls to RequestMachine.get() should honor the limit remaining
-        - [ ] subsequent calls to RequestMachine.get() should honor the poll interval
-        - [ ] consider sleeping using the diff between (poll - last time)
+    - [x] work on can_request
+        - [x] subsequent calls to RequestMachine.get() should honor the reset timings
+          - [x] if the limit has been reached when remaining = 0
+        - [x] subsequent calls to RequestMachine.get() should honor the limit remaining
+        - [x] subsequent calls to RequestMachine.get() should honor the poll interval
+        - [x] ~~consider sleeping using the diff between (poll - last time)~~ => this
+              must be done in the service
     - [ ] add RequestMachine to RequestService
+    - [ ] if RequestMachine state is waiting, then create method to get proposed interval
+          number which service should sleep in event loop and call the method again
+    - [ ] consider adding counts to service if continuous calls to get occur but system
+          is in error state. Maybe flag the service in an error state?
     - [ ] check for etag?
     - [ ] check for ratelimit reached?
     - [ ] check for poll rate?
