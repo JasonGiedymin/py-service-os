@@ -1,13 +1,13 @@
-__author__ = 'jason'
-
 from enum import Enum
 from time import time
 from uuid import uuid4
-
 from greplin import scales
 from greplin.scales import meter
+import logging
 
 from system.services import BaseService, BaseStates
+
+__author__ = 'jason'
 
 
 class RequestHeaders:
@@ -123,8 +123,15 @@ class RequestMachine:
     # timing for 1/5/15 minute averages
     latency_window = meter.MeterStat('latency_window')
 
+    console = logging.StreamHandler()
+    format_str = '%(asctime)s\t%(levelname)s -- %(processName)s %(filename)s:%(lineno)s -- %(message)s'
+    console.setFormatter(logging.Formatter(format_str))
+
     def __init__(self, session, request_spec):
         # BaseService.__init__(self)
+        self.log = logging.getLogger()
+        self.log.setLevel(logging.DEBUG)
+        self.log.addHandler(self.console)
         self.uuid = uuid4()  # unit identifier
         scales.init(self, '/request-machine/%s' % self.uuid)
         # self.register_child_stat('/request-machine/%s' % self.uuid)
@@ -161,8 +168,6 @@ class RequestMachine:
         if time_stamp <= ttr and now >= ttr:
             print "ts less than ttr and now greater than ttr"
             return True
-        # elif now >= ttr:
-        #     return True
         else:
             return False
 
@@ -173,39 +178,58 @@ class RequestMachine:
         now = time()
         last = self.timings.last_request_timestamp
         estimated_interval_ts = last + float(self.timings.interval)
-        return now > estimated_interval_ts
+        result = now > estimated_interval_ts
+
+        if not result:
+            self.log.debug("now (%d) not yet past the interval (%d)" % (now, estimated_interval_ts))
+
+        return result
 
     def past_reset_window(self):
         now = time()
         reset_window = float(self.timings.time_to_reset)
-        return now >= reset_window
+        result = now >= reset_window
+
+        if not result:
+            self.log.debug("request not yet past reset window")
+
+        return result
 
     def request_made_since_reset_window(self):
         timestamp = float(self.timings.last_request_timestamp)
         reset_window = float(self.timings.time_to_reset)
-        return timestamp >= reset_window
+        result = timestamp >= reset_window
+
+        if result:
+            self.log.warn("request was made since reset window")
+
+        return result
 
     def edge_case(self):
-        return self.limit_reached \
+        result = self.limit_reached \
                and self.past_reset_window() \
                and self.request_made_since_reset_window()
+
+        if result:
+            self.log.error("RequestMachine edge case detected")
+
+        return result
 
     def can_request(self):
         if self.edge_case():
             # TODO: log error here too
             return False, RequestMachineStates.EdgeCaseError
 
-        # if the limit has been reached
-        if not self.limit_reached():
-            if self.past_interval():
+        if self.past_interval():
+            # if the limit has been reached
+            if not self.limit_reached():
                 return True
-            return False, RequestMachineStates.WaitingForIntervalToPass
-        else:  # limit reached
-            if self.past_reset_window():  # limit should be reset
-                if self.past_interval():
+            else:  # limit reached
+                if self.past_reset_window():  # limit should be reset
                     return True
-                return False, RequestMachineStates.WaitingForIntervalToPass
-            return False, RequestMachineStates.WaitingForReset
+                return False, RequestMachineStates.WaitingForReset
+
+        return False, RequestMachineStates.WaitingForIntervalToPass
 
     def _update(self, resp):
         self.timings.update(resp)

@@ -51,6 +51,8 @@ TODO
         - [x] subsequent calls to RequestMachine.get() should honor the poll interval
         - [x] ~~consider sleeping using the diff between (poll - last time)~~ => this
               must be done in the service
+    - [x] promote interval to be higher precedence, only if we have a timestamp which
+          to do the calculation from.
     - [ ] add RequestMachine to RequestService
     - [ ] if RequestMachine state is waiting, then create method to get proposed interval
           number which service should sleep in event loop and call the method again
@@ -65,8 +67,14 @@ TODO
     - [ ] consider timings time based checking?
     - [ ] expand on RequestMachine.get() states, with state switch/lambdas
 
+## v0.0.2.0 - RequestMachineMatrix
+- [ ] store all vars (request spec, timing, etc...) in a dict, key'ed by uri, allowing
+      multiple requests to be handled by one machine. First pass should be blocking.
+- [ ] next up make each get spawn and return a future, saved in
+
+
 ## v0.0.3.0 - UniqueClass
-- [ ] UniqueService class
+- [?] UniqueService class?
 - [ ] Remove uuid from BaseService to UniqueService and inherit from it
 
 ## v0.0.4.0 - Run System

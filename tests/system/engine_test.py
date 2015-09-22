@@ -1,5 +1,6 @@
-__author__ = 'jason'
-
+#
+# Deprecated!
+#
 
 # External
 import json
@@ -10,6 +11,8 @@ from data.engine import States
 
 # Helpers
 import mock_requests
+
+__author__ = 'jason'
 
 
 def test_create():
@@ -71,10 +74,10 @@ def test_engine_limits():
 
     curr_limits = engine.limits['events']
 
-    assert curr_limits.last_op_time > 0 # we record the time get took place
+    assert curr_limits.last_op_time > 0  # we record the time get took place
     assert curr_limits.xrate_limit == '5000'
     assert curr_limits.xrate_limit_remaining == '4994'
-    assert curr_limits.next_reset == '1440648111'
+    assert curr_limits.next_reset >= '1440648111'
     assert curr_limits.xpoll_interval == '2'
     assert curr_limits.cache_control == 'private, max-age=60, s-maxage=60'
     assert curr_limits.last_modified == 'Wed, 26 Aug 2015 20:13:37 GMT'

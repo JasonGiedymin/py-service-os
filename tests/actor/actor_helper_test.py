@@ -3,8 +3,8 @@ import gevent
 
 # Lib
 from system.actors import Actor, Supervisor, ActorMessages, ActorStates, RoundRobinIndexer
-from system.actors import Directory
-from system.actors import Scheduler
+from system.actors.directory import Directory
+from system.actors.helpers import Scheduler
 
 # Helpers
 
@@ -27,18 +27,17 @@ class MockActor(Actor):
 
 
 class MockScheduler(Scheduler):
-        def __init__(self, name, directory):
-            Scheduler.__init__(self, name, directory)
+        def __init__(self, name, directory, supervisor):
+            Scheduler.__init__(self, name, directory, supervisor)
             self.did_ack = False
             self.did_loop = False
-            self.supervisor = None
+            self.supervisor = supervisor
 
         def ack(self):
             self.did_ack = True
 
-        def loop(self, supervisor):
+        def loop(self):
             self.did_loop = True
-            self.supervisor = supervisor
 
 
 def test_roundrobin():
@@ -80,7 +79,7 @@ def test_worker_scheduler():
     curr_directory = Directory()
     curr_directory.add_actor('supervisor', curr_supervisor)
 
-    scheduler = MockScheduler("scheduler", curr_directory)
+    scheduler = MockScheduler("scheduler", curr_directory, curr_supervisor)
 
     # -- Test receive() --
     # blocks until greenlet is complete

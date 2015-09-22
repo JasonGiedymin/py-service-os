@@ -1,13 +1,13 @@
-__author__ = 'jason'
-
 import time
 import gevent
 
 from services.request import RequestSpec, RequestMachine, RequestMachineStates, RequestTimings
 from tests.system import mock_requests
 
+__author__ = 'jason'
 
-def atest_request_timings():
+
+def test_request_timings():
     send_headers = {
         'token': '0000000000'
     }
@@ -51,9 +51,11 @@ def test_can_request():
 
     # start modifying
     machine.timings.rate_limit_remaining = '0'
+    # set last timestamp to 60 seconds ago
+    machine.timings.last_request_timestamp = time.time() - 60
     # time to reset window will be now + 1 seconds
     machine.timings.time_to_reset = str(time.time() + 1)
-    # limit is 0, check to see if the window has passed
+    # limit from above should be 0, check to see if the window has passed
     assert machine.can_request() == (False, RequestMachineStates.WaitingForReset)
     # sleep one second, allowing reset window to pass, allowing call
     gevent.sleep(2)  # ensures that we really went past the reset above of +1 sec
@@ -100,8 +102,11 @@ def test_can_request_integration():
 
     # second time around the resp will be None and state in waiting
     # since we'll manually set the reset timing to a future time.
-    # Also we must reset the machine state as is in an error state
-    # from above.
+    # Also we must reset both the machine state as is in an error state
+    # from above, and also the time stamp to minus 1, since interval
+    # by default is set to 1 (second). Else the edge case will
+    # reappear as it does above.
+    machine.timings.last_request_timestamp = time.time() - 1
     machine.timings.time_to_reset = str(time.time() + 200)
     machine.reset_state()
     resp = machine.get()
