@@ -1,11 +1,14 @@
 from enum import Enum
 from time import time
 from uuid import uuid4
-from greplin import scales
-from greplin.scales import meter
 import logging
 
+from greplin import scales
+from greplin.scales import meter
+import requests
+
 from system.services import BaseService, BaseStates
+from utils import timeutils
 
 __author__ = 'jason'
 
@@ -34,7 +37,7 @@ class RequestSpec:
     """
     def __init__(self,
                  uri=None,
-                 interval=1,
+                 interval=1000,  # interval is in milliseconds
                  rate_limit=1,
                  rate_limit_remaining=1,
                  time_to_reset=60,
@@ -66,10 +69,14 @@ class RequestTimings:
         self.rate_limit_remaining = str(spec.rate_limit_remaining)
         self.time_to_reset = str(spec.time_to_reset)  # ttr = time till reset
         self.etag = spec.etag
-        self.last_request_timestamp = time()
+        self.last_request_timestamp = self.get_now()
+
+    @staticmethod
+    def get_now():
+        return timeutils.milliseconds()
 
     def update_timestamp(self):
-        self.last_request_timestamp = time()  # needed to enforce poll interval
+        self.last_request_timestamp = self.get_now()
 
     def update(self, resp):
         """
@@ -88,11 +95,13 @@ class RequestTimings:
 
 
 class RequestService(BaseService):
-    def __init__(self, request_spec):
+    def __init__(self, name, request_spec, session=requests.Session()):
+        BaseService.__init__(self, name)
         self.request_spec = request_spec
+        self.machine = RequestMachine(session, request_spec)
 
     def event_loop(self):
-        pass
+        self.log.debug("tick")
 
 
 class RequestMachineStates(Enum):
@@ -128,7 +137,6 @@ class RequestMachine:
     console.setFormatter(logging.Formatter(format_str))
 
     def __init__(self, session, request_spec):
-        # BaseService.__init__(self)
         self.log = logging.getLogger()
         self.log.setLevel(logging.DEBUG)
         self.log.addHandler(self.console)
@@ -161,7 +169,7 @@ class RequestMachine:
         """
         time_stamp = self.timings.last_request_timestamp
         ttr = float(self.timings.time_to_reset)
-        now = time()
+        now = timeutils.milliseconds()
 
         # last time called was before or at the reset and
         # time now is at or beyond the reset allow
@@ -175,7 +183,7 @@ class RequestMachine:
         return int(self.timings.rate_limit_remaining) <= 0
 
     def past_interval(self):
-        now = time()
+        now = timeutils.milliseconds()
         last = self.timings.last_request_timestamp
         estimated_interval_ts = last + float(self.timings.interval)
         result = now > estimated_interval_ts
@@ -186,7 +194,7 @@ class RequestMachine:
         return result
 
     def past_reset_window(self):
-        now = time()
+        now = timeutils.milliseconds()
         reset_window = float(self.timings.time_to_reset)
         result = now >= reset_window
 

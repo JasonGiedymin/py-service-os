@@ -1,9 +1,8 @@
-__author__ = 'jason'
-
-
 import gevent
 
 from system.services import OutputService, BaseStates, BaseService
+
+__author__ = 'jason'
 
 
 # A worker used for testing the scheduler

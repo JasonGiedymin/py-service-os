@@ -1,5 +1,3 @@
-__author__ = 'jason'
-
 # external
 import gevent
 from gevent.queue import Queue
@@ -9,6 +7,8 @@ from greplin import scales
 from services import BaseService, DirectoryService
 from states import BaseStates, EventLoopStates
 from strategies import RoundRobinIndexer
+
+__author__ = 'jason'
 
 
 class ServiceManager(BaseService):
@@ -25,9 +25,9 @@ class ServiceManager(BaseService):
         BaseService.start(self)
         self._directory_service_proxy.start()
 
-        print "starting services..."
+        self.log.info("starting services...")
         for service_name, service in self._directory.iteritems():
-            print "starting service %s" % service_name
+            self.log.info("starting service %s" % service_name)
             self.started_services.put(service.start())
 
     def add_service(self, service, name):

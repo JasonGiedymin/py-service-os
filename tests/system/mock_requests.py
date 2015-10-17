@@ -13,7 +13,7 @@ GLOBAL_MOCK_REQUEST_RATELIMIT = '5000'
 GLOBAL_MOCK_REQUEST_REMAINING = '4994'
 # GLOBAL_MOCK_REQUEST_RESET = '1440648111'
 # GLOBAL_MOCK_REQUEST_RESET2 = '1440649111'
-GLOBAL_MOCK_REQUEST_RESET = str(time.time())
+GLOBAL_MOCK_REQUEST_RESET = str(time.time()) # here we stick with time as seconds
 GLOBAL_MOCK_REQUEST_RESET2 = str(time.time() + 1)
 GLOBAL_MOCK_REQUEST_ETAG1 = '1fa058896df286d636d0f75c69556f03'
 
@@ -141,9 +141,7 @@ def create_mock_session():
 
 
 def create_mock_request_machine(request_spec):
-    session = requests.Session()
-    adapter = create_adapter()
-    session.mount('mock', adapter)
+    session = create_mock_session()
     return RequestMachine(session, request_spec)
 
 
