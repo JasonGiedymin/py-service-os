@@ -54,6 +54,8 @@ TODO
     - [x] promote interval to be higher precedence, only if we have a timestamp which
           to do the calculation from.
     - [ ] add RequestMachine to RequestService
+        - [ ] add 'some' logging to services
+        - [ ] fix bug where logs were duplicated `logging.propagate=False`
     - [ ] if RequestMachine state is waiting, then create method to get proposed interval
           number which service should sleep in event loop and call the method again
     - [ ] consider adding counts to service if continuous calls to get occur but system
@@ -66,6 +68,68 @@ TODO
     - [ ] Ensure cache/stats are recorded for above, requests, etc...
     - [ ] consider timings time based checking?
     - [ ] expand on RequestMachine.get() states, with state switch/lambdas
+
+## v0.0.2.1 - RequestMachineMS
+
+- [ ] update request machine to handle milliseconds => looks like need to find alternative to time() which is seconds,
+need ms or ns.
+- [ ] refactor limits to not be string type, upon receiving immediately convert
+- [ ] update error code handling based on golang work:
+```golang
+        case 403:
+			log.Errorf("Client credentials are no longer valid or were not able to be verified.")
+			resource.SetState(states.Error)
+			return g.emptyResponse(resource)
+		case 404, 500:
+			// update timings
+			resource.SetState(states.WaitingForServerAlive)
+			return g.emptyResponse(resource)
+```
+
+## v0.0.2.1 - RequestMachineMS
+
+- [ ] create v2 package
+- [ ] create class representing resource
+    - [ ] add owner (being uuid)
+    - [ ] create states based on golang work:
+```golang
+// Idle means system is idle ready for input.
+	Idle MachineState = 1 + iota
+
+	// Stopped state signifies the machine has stopped.
+	Stopped
+
+	// Processing state signifies that work is being done.
+	Processing
+
+	// Processing state signifies that work is being done.
+	ProcessingRequest
+
+	// This states works on the response returned
+	ProcessingResponse
+
+	// WaitingForRequest state signifies that a request has been
+	// sent and the machine is waiting.
+	WaitingForRequest
+
+	// WaitingForInterval state signifies that a request cannot
+	// be made as it's not yet past the set interval.
+	WaitingForInterval
+
+	// WaitingForReset state signifies that the machine has
+	// reached a limit and is waiting for the reset window
+	// when the limit will be reset.
+	WaitingForReset
+
+	// Server Error, Waiting For server to come back online
+	WaitingForServerAlive
+
+	// Error ...
+	Error
+
+	// ErrorEdgeCase ...
+	ErrorEdgeCase
+```
 
 ## v0.0.2.0 - RequestMachineMatrix
 - [ ] store all vars (request spec, timing, etc...) in a dict, key'ed by uri, allowing
@@ -84,7 +148,7 @@ TODO
 - [ ] Service to publish data to Kafka raw
 
 ## v0.0.x.0 - Rest Live Data
-- [ ] Logging
+- [ ] Need better logging
 - [ ] rest api to see stats
 - [ ] logging to graphite
     - [ ] revisit greplin/Cue/scales and turn on gaphited data

@@ -1,6 +1,5 @@
-__author__ = 'jason'
-
 from uuid import uuid4
+import logging
 import gevent
 from gevent.queue import Queue
 from greplin import scales
@@ -8,6 +7,9 @@ from greplin.scales import meter
 
 from states import BaseStates
 from exceptions import IdleActionException
+from data.loggers import Logger
+
+__author__ = 'jason'
 
 
 class BaseService:
@@ -28,6 +30,10 @@ class BaseService:
     # timing for 1/5/15 minute averages
     latency_window = meter.MeterStat('latency_window')
 
+    # console = logging.StreamHandler()
+    # format_str = '%(asctime)s\t%(levelname)s -- %(processName)s %(filename)s:%(lineno)s -- %(message)s'
+    # console.setFormatter(logging.Formatter(format_str))
+
     def event_loop(self):
         """
         Override
@@ -41,9 +47,15 @@ class BaseService:
 
     def __init__(self, name="base-service", directory_proxy=None):
         self.uuid = uuid4()
-        scales.init(self, '/%s/%s' % (name, self.uuid))
+        self.unique_name = '/%s/%s' % (name, self.uuid)
+        scales.init(self, self.unique_name)
 
-        # print "%s - Init" % name
+        # self.log = logging.getLogger(self.unique_name)
+        # self.log.setLevel(logging.DEBUG)
+        # self.log.addHandler(self.console)
+        self.log = Logger.get_logger(self.unique_name)
+
+        print "%s - Init" % name
         self.name = name
         self.greenlet = None
         self._service_state = BaseStates.Idle

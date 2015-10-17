@@ -2,6 +2,7 @@ import time
 import gevent
 
 from services.request import RequestSpec, RequestMachine, RequestMachineStates, RequestTimings
+from utils import timeutils
 from tests.system import mock_requests
 
 __author__ = 'jason'
@@ -22,7 +23,7 @@ def test_request_timings():
     timings = RequestTimings(request_spec)
 
     # assert defaults
-    assert timings.interval == '1'
+    assert timings.interval == '1000'
     assert timings.rate_limit == '1'
     assert timings.rate_limit_remaining == '1'
     assert timings.time_to_reset == '60'
@@ -52,9 +53,9 @@ def test_can_request():
     # start modifying
     machine.timings.rate_limit_remaining = '0'
     # set last timestamp to 60 seconds ago
-    machine.timings.last_request_timestamp = time.time() - 60
+    machine.timings.last_request_timestamp = timeutils.milliseconds() - 60000
     # time to reset window will be now + 1 seconds
-    machine.timings.time_to_reset = str(time.time() + 1)
+    machine.timings.time_to_reset = str(timeutils.milliseconds() + 1000)
     # limit from above should be 0, check to see if the window has passed
     assert machine.can_request() == (False, RequestMachineStates.WaitingForReset)
     # sleep one second, allowing reset window to pass, allowing call
@@ -85,7 +86,7 @@ def test_can_request_integration():
     }
 
     request_spec = RequestSpec(uri='mock://github/events/limits', send_headers=send_headers,
-                               time_to_reset=time.time() - 100,
+                               time_to_reset=timeutils.milliseconds() - 100000,
                                rate_limit_remaining=0)
     machine = mock_requests.create_mock_request_machine(request_spec)
 
@@ -106,8 +107,8 @@ def test_can_request_integration():
     # from above, and also the time stamp to minus 1, since interval
     # by default is set to 1 (second). Else the edge case will
     # reappear as it does above.
-    machine.timings.last_request_timestamp = time.time() - 1
-    machine.timings.time_to_reset = str(time.time() + 200)
+    machine.timings.last_request_timestamp = timeutils.milliseconds() - 1000
+    machine.timings.time_to_reset = str(timeutils.milliseconds() + 200000)
     machine.reset_state()
     resp = machine.get()
     assert resp is None
@@ -129,7 +130,7 @@ def atest_mock_request_machine():
     }
 
     request_spec = RequestSpec(uri='mock://github/events', send_headers=send_headers,
-                               time_to_reset=str(time.time() - 100))
+                               time_to_reset=str(timeutils.milliseconds() - 100000))
     ifnonmatch = request_spec.headers.ifnonmatch.lower()
     machine = mock_requests.create_mock_request_machine(request_spec)
 
@@ -193,7 +194,7 @@ def atest_mock_request_machine():
     assert resp.status_code == 304
     assert machine.state == RequestMachineStates.WaitingForModifiedContent
     # assert that the timings still change even though a 304 was received
-    assert machine.timings.interval == '20'  # the mock response sets a new interval to 20
+    assert machine.timings.interval == '20000'  # the mock response sets a new interval to 20
 
     # reset back to events for remainder of the test
     machine.request_spec.uri = 'mock://github/events'
