@@ -29,7 +29,7 @@ TODO
               above fixed first, else can't aggregate data.
 - [x] add @classmethod => not much to bind to a class with here
 
-## v0.0.2.0 - RequestMachine
+## v0.0.2.0 - RequestMachine - [Defer complete]
 - [*] Read from the github firehose
     - [x] ~~create request engine class~~ merge into actors
     - [x] create worker
@@ -69,8 +69,7 @@ TODO
     - [ ] consider timings time based checking?
     - [ ] expand on RequestMachine.get() states, with state switch/lambdas
 
-## v0.0.2.1 - RequestMachineMS
-
+## v0.0.2.1 - RequestMachineMS - [Defer complete]
 - [ ] update request machine to handle milliseconds => looks like need to find alternative to time() which is seconds,
 need ms or ns.
 - [ ] refactor limits to not be string type, upon receiving immediately convert
@@ -86,50 +85,46 @@ need ms or ns.
 			return g.emptyResponse(resource)
 ```
 
-## v0.0.2.1 - RequestMachineMS
+## v0.0.2.1 - V2
 
-- [ ] create v2 package
-- [ ] create class representing resource
-    - [ ] add owner (being uuid)
-    - [ ] create states based on golang work:
-```golang
-// Idle means system is idle ready for input.
-	Idle MachineState = 1 + iota
-
-	// Stopped state signifies the machine has stopped.
-	Stopped
-
-	// Processing state signifies that work is being done.
-	Processing
-
-	// Processing state signifies that work is being done.
-	ProcessingRequest
-
-	// This states works on the response returned
-	ProcessingResponse
-
-	// WaitingForRequest state signifies that a request has been
-	// sent and the machine is waiting.
-	WaitingForRequest
-
-	// WaitingForInterval state signifies that a request cannot
-	// be made as it's not yet past the set interval.
-	WaitingForInterval
-
-	// WaitingForReset state signifies that the machine has
-	// reached a limit and is waiting for the reset window
-	// when the limit will be reset.
-	WaitingForReset
-
-	// Server Error, Waiting For server to come back online
-	WaitingForServerAlive
-
-	// Error ...
-	Error
-
-	// ErrorEdgeCase ...
-	ErrorEdgeCase
-```
+- [x] create v2 package
+- [x] remove old TODOs
+- [x] redo resource and supporting classes
+    - [x] add owner (being uuid)
+    - [x] create class representing resource
+    - [x] ensure it carries over but with milliseconds
+    - [x] redo tests
+    - [-] create states based on golang work:
+- [x] memory based queue for testing
+- [*] resource analyzer
+    - [x] resource states
+    - [x] direct unit test for resource analyzer
+    - [x] on first init, resource has bad defaults. send in a spec or find some check to signal first call =>
+          checking if timestamp is not None. Initial resource will have None timestamp.
+    - [x] convert time to reset to internal milliseconds
+    - [x] check that resource can be requested, request_analyzer_test.py:20+
+        - [x] test_resource_analyzer_edge_case
+        - [x] test with owner
+        - [x] test happy path with limit remaining
+        - [x] test when limit reached
+        - [x] fix bug in logger, where it would not return a logger if logger handlers existed
+        - [x] return resource state when calling can request
+    - [ ] handle cycomatic complexity of can_request
+    - [ ] parse out response status to determine if has error
+- [x] response parser
+    - [x] convert time to reset to internal milliseconds
+    - [ ] check for errors?
+- [*] analyzer app
+    - [x] check for ownership
+    - [ ] make resource analyzer a service with supervisor?
+    - [ ] too many parent/child logs
+    - [ ] start of db interface (resource store)
+- [ ] single app cli that can start any number of services
+    - [ ] single VM service cat?
+- [ ] resource requestor
+    - [ ] do request
+    - [ ] parse response
+- [ ] publisher
 
 ## v0.0.2.0 - RequestMachineMatrix
 - [ ] store all vars (request spec, timing, etc...) in a dict, key'ed by uri, allowing

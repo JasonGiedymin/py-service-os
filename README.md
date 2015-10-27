@@ -18,6 +18,17 @@ filtering or statistics. The stats should be meant for health and performance,
 not for data inspection.
 
 ## Deps
+This project can make use of pypy.
+```shell
+brew install pypy
+
+mkvirtualenv --python $(which pypy) pypy-git-pub
+# then always use pypy in place of python
+# you can also use pip, which should be referenced by
+# the new virtualenv
+
+```
+
 ```shell
 pip install --upgrade pip
 ```
@@ -30,8 +41,9 @@ pip install -U CacheControl
 pip install -U pytest
 pip install -U requests_mock
 pip install -U futures
-pip install -U greenlet
-pip install -U gevent
+# pypy already provides, pip install -U greenlet
+pip install gevent==1.1b6 # get latest release from https://github.com/gevent/gevent/releases
+# non pypy: pip install -U gevent
 pip install -U enum34
 pip install -U scales
 pip install -U flask

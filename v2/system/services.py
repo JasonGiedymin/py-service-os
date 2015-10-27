@@ -1,5 +1,4 @@
 from uuid import uuid4
-import logging
 import gevent
 from gevent.queue import Queue
 from greplin import scales
@@ -8,6 +7,7 @@ from greplin.scales import meter
 from states import BaseStates
 from exceptions import IdleActionException
 from data.loggers import Logger
+
 
 __author__ = 'jason'
 
@@ -36,7 +36,7 @@ class BaseService:
 
     def event_loop(self):
         """
-        Override
+        Override this
         """
         # while True:
         #     with self.latency.time():
@@ -119,14 +119,10 @@ class BaseService:
 
 class OutputService(BaseService):
     """
-    This is a service which one expects output
-    to be tracked. The mechanism is via the use
-    of an output_queue of type gevent.Queue.
-    As opposed to a scheduled
-    service which is almost a fire and forget.
-    Note that a fire and forget is great where
-    it can still log output to an external
-    system for deferred parsing.
+    This is a service which one expects output to be tracked. The mechanism
+    is via the use of an output_queue of type gevent.Queue. Use this as an
+    output buffer, allowing a worker to do what it does best which is to
+    work.
     """
     def __init__(self, name, size=None, items=None):
         BaseService.__init__(self, name)
@@ -192,35 +188,35 @@ class TestWorker(BaseService):
             # print "%s - working" % self.name
             gevent.sleep(.5)
 
+#
+# class RequestSpec:
+#     def __init__(self):
+#         pass
 
-class RequestSpec:
-    def __init__(self):
-        pass
 
-
-class RequestWorker:
-    # do work
-    # take requestspec
-    def __init__(self, spec):
-        self.spec = spec
-        self.greenlet = None
-        self.on = False
-
-    def work(self):
-        while self.on:
-            # print("Working on http request")
-            gevent.sleep(1)
-
-    def start(self):
-        print "starting..."
-        self.on = True
-        self.greenlet = gevent.spawn(self.work)
-        return self.greenlet
-
-    def stop(self):
-        self.on = False
-        # print "<- Stopped!"
-        gevent.kill(self.greenlet)
+# class RequestWorker:
+#     # do work
+#     # take requestspec
+#     def __init__(self, spec):
+#         self.spec = spec
+#         self.greenlet = None
+#         self.on = False
+#
+#     def work(self):
+#         while self.on:
+#             # print("Working on http request")
+#             gevent.sleep(1)
+#
+#     def start(self):
+#         print "starting..."
+#         self.on = True
+#         self.greenlet = gevent.spawn(self.work)
+#         return self.greenlet
+#
+#     def stop(self):
+#         self.on = False
+#         # print "<- Stopped!"
+#         gevent.kill(self.greenlet)
 
 # w = RequestWorker(RequestSpec())
 # gevent.spawn_later(10, w.stop)
