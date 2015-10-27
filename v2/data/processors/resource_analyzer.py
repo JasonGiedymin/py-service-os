@@ -42,58 +42,34 @@ class ResourceAnalyzer:
             self.log.error("resource [%s] was found to be in an edge case error state." % resource.__repr__())
             return False, ResourceStates.EdgeError
 
-        # cyclomatic complexity is high here
-        if resource.timings.has_interval_passed():
-            if resource.timings.has_limit_been_reached():
-                if resource.timings.has_reset_window_past():
-                    self.log.debug("resource [%s] limit was reached, but can now be reset" % resource.__repr__())
-                    return True
-                else:
-                    self.log.debug("resource [%s] limit was reached [%d], waiting for reset." %
-                                   (resource.__repr__(), resource.timings.rate_limit_remaining))
-                    return False, ResourceStates.WaitingForReset
-            else:
-                self.log.debug("resource [%s] interval passed, limit remaining: [%d], ready to be requested." % (resource.__repr__(), resource.timings.rate_limit_remaining))
+        # Kept here for ease of reading, but if performance is an issue, make instance or static methods
+        def check_reset_window():
+            if resource.timings.has_reset_window_past():
+                self.log.debug("resource [%s] limit was reached, but can now be reset" % resource.__repr__())
                 return True
-        else:
-            self.log.debug("resource [%s] waiting for interval." % resource.__repr__())
-            return False, ResourceStates.WaitingForInterval
+            else:
+                self.log.debug("resource [%s] limit was reached [%d], waiting for reset." %
+                               (resource.__repr__(), resource.timings.rate_limit_remaining))
+                return False, ResourceStates.WaitingForReset
 
-    # func (r *Resource) CanBeRequested() (bool, states.MachineState) {
-    #     // if machine in error states stop
-    #     if r.HasErrorState() {
-    #         r.log.Debug("machine is in error state")
-    #         return false, r.GetState()
-    #     }
-    #
-    #     // if machine in abnormal states stop
-    #     if r.IsBusy() {
-    #         r.log.Debugf("machine is busy with state: %s", r.GetState())
-    #         return false, r.GetState()
-    #     }
-    #
-    #     // immediately check for edge case
-    #     if r.IsEdgeCase() {
-    #         r.log.Debug("edge case found")
-    #         return false, states.ErrorEdgeCase
-    #     }
-    # ***** Here start work
-    #     // ensure interval has past as requests cannot be made until that point
-    #     if r.Timings.HasIntervalPast() {
-    #         if !r.Timings.HasLimitBeenReached() {
-    #             r.log.Debug("past interval, limit remaining, good to go")
-    #             return true, states.Processing
-    #         } else { // limit reached
-    #             if r.Timings.HasResetWindowPast() {
-    #                 r.log.Debug("past interval, limit reached, reset window past, good to go")
-    #                 return true, states.Processing
-    #             }
-    #
-    #             r.log.Debug("past interval, limit reached, waiting for reset")
-    #             return false, states.WaitingForReset
-    #         }
-    #     }
-    #
-    #     r.log.Debug("waiting for interval to pass")
-    #     return false, states.WaitingForInterval
-    # }
+        def check_timings(next_fx):
+            if resource.timings.has_limit_been_reached():
+                return next_fx()
+            else:
+                data = (resource.__repr__(), resource.timings.rate_limit_remaining)
+                msg = "resource [%s] interval passed, limit remaining: [%d], ready to be requested." % data
+                self.log.debug(msg)
+                return True
+
+        def check_interval(next_fx):
+            if resource.timings.has_interval_passed():
+                return next_fx()
+            else:
+                self.log.debug("resource [%s] waiting for interval." % resource.__repr__())
+                return False, ResourceStates.WaitingForInterval
+
+        def then_check_timings(next_fx):
+            return lambda: check_timings(next_fx)
+
+        # would rather do pattern matching or a monadic map...
+        return check_interval(then_check_timings(check_reset_window))

@@ -109,7 +109,7 @@ need ms or ns.
         - [x] test when limit reached
         - [x] fix bug in logger, where it would not return a logger if logger handlers existed
         - [x] return resource state when calling can request
-    - [ ] handle cycomatic complexity of can_request
+    - [x] handle cycomatic complexity of can_request
     - [ ] parse out response status to determine if has error
 - [x] response parser
     - [x] convert time to reset to internal milliseconds
