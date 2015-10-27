@@ -109,10 +109,10 @@ need ms or ns.
         - [x] test when limit reached
         - [x] fix bug in logger, where it would not return a logger if logger handlers existed
         - [x] return resource state when calling can request
-    - [x] handle cycomatic complexity of can_request
-    - [ ] parse out response status to determine if has error
+    - [x] handle cycomatic complexity of can_request    
 - [x] response parser
     - [x] convert time to reset to internal milliseconds
+    - [ ] parse out response status to determine if has error, should be done before timings parsing
     - [ ] check for errors?
 - [*] analyzer app
     - [x] check for ownership
