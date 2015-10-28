@@ -7,12 +7,12 @@ __author__ = 'jason'
 
 
 def test_response_parser():
-    uri = "mock://github/events"
+    uri = "mock://github/events/statustest"
 
     session = mock_requests.create_mock_session()
     response = session.get(uri)
     timings = ResourceTimings()
-    resource = Resource(uri, timings)
+    resource = Resource(uri, timings, json=True)
 
     # parse out timings from headers
     # don't worry about getting the body to publish,
@@ -26,3 +26,7 @@ def test_response_parser():
     assert timings.rate_limit_remaining == int(mock_requests.GLOBAL_MOCK_REQUEST_REMAINING)
     assert timings.etag == mock_requests.GLOBAL_MOCK_REQUEST_ETAG1
     assert timings.time_to_reset == int(mock_requests.GLOBAL_MOCK_REQUEST_RESET) * 1000
+
+    #
+    # 2nd Response, should be
+    #
