@@ -38,7 +38,8 @@ class Resource:
                  timings,
                  headers=ResourceHeaders(),
                  send_headers={},
-                 owner=""
+                 owner="",
+                 json=False
                  ):
         """
         When New resources are created a unique name is generated and
@@ -58,7 +59,12 @@ class Resource:
         # this represents the queue that the resource is now in
         self.queue_topic = "NONE"
 
+        self.json = json
+
         self.state = ResourceStates.Idle
+
+    def is_json(self):
+        return self.json
 
     def has_owner(self):
         return len(self.owner) > 0
@@ -68,6 +74,12 @@ class Resource:
 
     def has_error(self):
         return self.state == ResourceStates.Error
+
+    def set_state(self, state):
+        self.state = state
+
+    def set_error_state(self):
+        self.state = ResourceStates.Error
 
     def __repr__(self):
         return '{"resource":{"id":"%s","uri":"%s"}}' % (self.id, self.uri)

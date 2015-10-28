@@ -45,7 +45,6 @@ def register_mock_github_events(adapter):
                 'Cache-Control': 'private, max-age=60, s-maxage=60',
                 'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
                 'ETag': GLOBAL_MOCK_REQUEST_ETAG1
-
             }
         }
     ])
@@ -62,7 +61,6 @@ def register_mock_github_events(adapter):
                 'Cache-Control': 'private, max-age=60, s-maxage=60',
                 'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
                 'ETag': GLOBAL_MOCK_REQUEST_ETAG1
-
             }
         }
     ])
@@ -89,6 +87,74 @@ def register_mock_github_events(adapter):
                 'X-RateLimit-Remaining': '0',
                 'X-RateLimit-Reset': str(time.time()),
                 'X-Poll-Interval': '1',
+                'Cache-Control': 'private, max-age=60, s-maxage=60',
+                'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
+                'ETag': GLOBAL_MOCK_REQUEST_ETAG1
+            }
+        }
+    ])
+
+    adapter.register_uri('GET', 'mock://github/events/statustest', [
+        {
+            'text': json.dumps(data),
+            'status_code': 200,
+            'headers': {
+                'X-RateLimit-Limit': GLOBAL_MOCK_REQUEST_RATELIMIT,
+                'X-RateLimit-Remaining': GLOBAL_MOCK_REQUEST_REMAINING,
+                'X-RateLimit-Reset': GLOBAL_MOCK_REQUEST_RESET,
+                'X-Poll-Interval': GLOBAL_MOCK_REQUEST_INTERVAL,
+                'Cache-Control': 'private, max-age=60, s-maxage=60',
+                'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
+                'ETag': GLOBAL_MOCK_REQUEST_ETAG1
+            }
+        },
+        {
+            'text': json.dumps(data),
+            'status_code': 304,
+            'headers': {
+                'X-RateLimit-Limit': GLOBAL_MOCK_REQUEST_RATELIMIT,
+                'X-RateLimit-Remaining': GLOBAL_MOCK_REQUEST_REMAINING,
+                'X-RateLimit-Reset': GLOBAL_MOCK_REQUEST_RESET,
+                'X-Poll-Interval': GLOBAL_MOCK_REQUEST_INTERVAL,
+                'Cache-Control': 'private, max-age=60, s-maxage=60',
+                'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
+                'ETag': GLOBAL_MOCK_REQUEST_ETAG1
+            }
+        },
+        {
+            'text': json.dumps(data),
+            'status_code': 403,
+            'headers': {
+                'X-RateLimit-Limit': GLOBAL_MOCK_REQUEST_RATELIMIT,
+                'X-RateLimit-Remaining': GLOBAL_MOCK_REQUEST_REMAINING,
+                'X-RateLimit-Reset': GLOBAL_MOCK_REQUEST_RESET,
+                'X-Poll-Interval': GLOBAL_MOCK_REQUEST_INTERVAL,
+                'Cache-Control': 'private, max-age=60, s-maxage=60',
+                'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
+                'ETag': GLOBAL_MOCK_REQUEST_ETAG1
+            }
+        },
+        {
+            'text': json.dumps(data),
+            'status_code': 404,
+            'headers': {
+                'X-RateLimit-Limit': GLOBAL_MOCK_REQUEST_RATELIMIT,
+                'X-RateLimit-Remaining': GLOBAL_MOCK_REQUEST_REMAINING,
+                'X-RateLimit-Reset': GLOBAL_MOCK_REQUEST_RESET,
+                'X-Poll-Interval': GLOBAL_MOCK_REQUEST_INTERVAL,
+                'Cache-Control': 'private, max-age=60, s-maxage=60',
+                'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
+                'ETag': GLOBAL_MOCK_REQUEST_ETAG1
+            }
+        },
+        {
+            'text': json.dumps(data),
+            'status_code': 500,
+            'headers': {
+                'X-RateLimit-Limit': GLOBAL_MOCK_REQUEST_RATELIMIT,
+                'X-RateLimit-Remaining': GLOBAL_MOCK_REQUEST_REMAINING,
+                'X-RateLimit-Reset': GLOBAL_MOCK_REQUEST_RESET,
+                'X-Poll-Interval': GLOBAL_MOCK_REQUEST_INTERVAL,
                 'Cache-Control': 'private, max-age=60, s-maxage=60',
                 'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
                 'ETag': GLOBAL_MOCK_REQUEST_ETAG1

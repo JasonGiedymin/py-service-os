@@ -109,11 +109,14 @@ need ms or ns.
         - [x] test when limit reached
         - [x] fix bug in logger, where it would not return a logger if logger handlers existed
         - [x] return resource state when calling can request
-    - [x] handle cycomatic complexity of can_request
-    - [ ] parse out response status to determine if has error
-- [x] response parser
+    - [x] handle cycomatic complexity of can_request    
+- [*] response parser
     - [x] convert time to reset to internal milliseconds
-    - [ ] check for errors?
+    - [x] parse out response status to determine if has error, should be done before timings parsing
+    - [x] stub out publish response
+    - [x] stub out publish error
+    - [x] tests
+    - [x] add ability to specify resource is json
 - [*] analyzer app
     - [x] check for ownership
     - [ ] make resource analyzer a service with supervisor?
