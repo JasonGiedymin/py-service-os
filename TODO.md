@@ -96,7 +96,7 @@ need ms or ns.
     - [x] redo tests
     - [-] create states based on golang work:
 - [x] memory based queue for testing
-- [*] resource analyzer
+- [x] resource analyzer
     - [x] resource states
     - [x] direct unit test for resource analyzer
     - [x] on first init, resource has bad defaults. send in a spec or find some check to signal first call =>
