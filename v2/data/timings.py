@@ -1,10 +1,7 @@
 from v2.utils import timeutils
-from v2.utils.loggers import Logger
 from v2.data.states import ResourceStates
 
 from uuid import uuid4
-from enum import Enum
-
 
 __author__ = 'jason'
 
@@ -120,6 +117,7 @@ class ResourceTimings:
         """
         This will update the interval timestamp. Helpful in needing
         to know when the interval has cycled.
+        :param use_now: use get_now or use last_request_timestamp
         :return:
         """
         if use_now:

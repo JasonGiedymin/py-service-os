@@ -4,7 +4,7 @@ import gevent
 
 # Lib
 from v2.system.os import Scheduler, ServiceManager
-from v2.system.services import BaseService, OutputService, DirectoryService
+from v2.system.services import BaseService, OutputService
 from v2.system.states import BaseStates
 from v2.system.exceptions import IdleActionException
 
