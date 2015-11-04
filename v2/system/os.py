@@ -4,9 +4,9 @@ from gevent.queue import Queue
 from greplin import scales
 
 # lib
-from services import BaseService, DirectoryService
-from states import BaseStates, EventLoopStates
-from strategies import RoundRobinIndexer
+from v2.system.services import BaseService, DirectoryService
+from v2.system.states import BaseStates, EventLoopStates
+from v2.system.strategies import RoundRobinIndexer
 
 __author__ = 'jason'
 

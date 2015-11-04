@@ -4,9 +4,9 @@ from gevent.queue import Queue
 from greplin import scales
 from greplin.scales import meter
 
-from states import BaseStates
-from exceptions import IdleActionException
-from data.loggers import Logger
+from v2.system.states import BaseStates
+from v2.system.exceptions import IdleActionException
+from v2.utils.loggers import Logger
 
 
 __author__ = 'jason'

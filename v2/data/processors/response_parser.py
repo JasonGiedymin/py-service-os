@@ -1,13 +1,13 @@
-from v2.data.processors import Processor
+from v2.data.processors import DataProcessor
 from v2.data.states import ResourceStates
 
 
 __author__ = 'jason'
 
 
-class ResponseParser(Processor):
-    def __init__(self, name):
-        Processor.__init__(self, name)
+class ResponseParser(DataProcessor):
+    def __init__(self, name, parent_logger=None):
+        DataProcessor.__init__(self, name, parent_logger)
 
     @staticmethod
     def parse_headers(response, resource):
@@ -17,44 +17,48 @@ class ResponseParser(Processor):
     def parse(self, response, resource):
         status_code = response.status_code
 
-        def publish_results(response, resource):
+        def publish_results(resp, res):
             content = None
 
-            if resource.is_json():
-                content = response.json()
+            if res.is_json():
+                content = resp.json()
             else:
-                content = response.content
+                content = resp.content
 
         def publish_error(content):
             pass
 
         def default():
-            msg = "Found a response code which didn't expect, setting resource to error state: %+v", status_code
-            self.log.error(msg)
+            msg = "Found a response code which didn't expect, setting resource to error state."
+            self.log.error(msg, status_code=status_code)
             resource.set_error_state()
 
         def res200():
             msg = "200 response code received."
-            self.log.debug(msg)
+            self.log.debug(msg, status_code=status_code)
             ResponseParser.parse_headers(response, resource)
             publish_results(response, resource)
 
         def res304():
             msg = "304 not modified received, waiting for next interval"
+            self.log.debug(msg, status_code=status_code)
             ResponseParser.parse_headers(response, resource)
 
         def res403():
             msg = "Client credentials are no longer valid or were not able to be verified."
+            self.log.debug(msg, status_code=status_code)
             resource.set_error_state()
             publish_error()
 
         def res404():
             msg = "Response received noting resource does not exist, or does not exist any longer."
+            self.log.error(msg, status_code=status_code)
             resource.set_error_state()
             publish_error()
 
         def res500():
             msg = "Response received noting resource does not exist, or does not exist any longer."
+            self.log.debug(msg, status_code=status_code)
             resource.set_error_state()
             publish_error()
 
@@ -69,7 +73,3 @@ class ResponseParser(Processor):
         handle = handler.get(status_code, default)
 
         handle()
-
-        # ResponseParser.parse_headers(response, resource)
-        # only if response good:
-        # resource.timings.update(response, resource.headers)

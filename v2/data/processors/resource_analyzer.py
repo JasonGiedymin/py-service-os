@@ -1,6 +1,7 @@
 from v2.utils import timeutils
 from v2.utils.loggers import Logger
 from v2.data.states import ResourceStates
+from v2.data.processors import DataProcessor
 
 from uuid import uuid4
 from enum import Enum
@@ -9,10 +10,9 @@ from enum import Enum
 __author__ = 'jason'
 
 
-class ResourceAnalyzer:
-    def __init__(self, name):
-        self.name = name
-        self.log = Logger.get_logger(self.name)
+class ResourceAnalyzer(DataProcessor):
+    def __init__(self, name, parent_logger=None):
+        DataProcessor.__init__(self, name, parent_logger)
 
     def is_edge_case(self, resource):
         value = resource.timings.has_limit_been_reached() \
@@ -20,7 +20,9 @@ class ResourceAnalyzer:
                and resource.timings.requested_since_reset()
 
         if value is True:
-            self.log.error("resource [%s] has timings that exhibit an error edge case." % resource.unique_name)
+            self.log.error("resource has timings that exhibit an error edge case.",
+                           resource_id=resource.id,
+                           resource_uri=resource.uri)
 
         return value
 
@@ -28,44 +30,58 @@ class ResourceAnalyzer:
         # == Base Checks == only check operationals at this point, for speed
         # checks if error exists
         if resource.has_error():
-            self.log.error("resource [%s] is in state of error"
-                           "while found trying to see if resource can be requested." % resource.__repr__())
+            self.log.error("resource is in state of error while trying to see if it can be requested.",
+                           resource_id=resource.id,
+                           resource_uri=resource.uri)
             return False, ResourceStates.Error
 
         # if someone owns the resource, it cannot be called. Think of it as a lock with semantics.
         if resource.has_owner():
-            self.log.error("resource [%s] already has an owner registered to it." % resource.__repr__())
+            self.log.error("resource already has an owner registered to it.",
+                           resource_owner=resource.owner,
+                           resource_id=resource.id,
+                           resource_uri=resource.uri)
             return False, ResourceStates.HasOwner
 
         # == Business Checks == now business logic can be accessed
         if self.is_edge_case(resource):
-            self.log.error("resource [%s] was found to be in an edge case error state." % resource.__repr__())
+            self.log.error("resource was found to be in an edge case error state.",
+                           resource_id=resource.id,
+                           resource_uri=resource.uri)
             return False, ResourceStates.EdgeError
 
         # Kept here for ease of reading, but if performance is an issue, make instance or static methods
         def check_reset_window():
             if resource.timings.has_reset_window_past():
-                self.log.debug("resource [%s] limit was reached, but can now be reset" % resource.__repr__())
+                self.log.debug("resource limit was reached, but can now be reset",
+                               resource_id=resource.id,
+                               resource_uri=resource.uri)
                 return True
             else:
-                self.log.debug("resource [%s] limit was reached [%d], waiting for reset." %
-                               (resource.__repr__(), resource.timings.rate_limit_remaining))
+                self.log.debug("resource limit was reached, waiting for reset.",
+                               limit=resource.timings.rate_limit_remaining,
+                               resource_id=resource.id,
+                               resource_uri=resource.uri)
                 return False, ResourceStates.WaitingForReset
 
         def check_timings(next_fx):
             if resource.timings.has_limit_been_reached():
                 return next_fx()
             else:
-                data = (resource.__repr__(), resource.timings.rate_limit_remaining)
-                msg = "resource [%s] interval passed, limit remaining: [%d], ready to be requested." % data
-                self.log.debug(msg)
+                msg = "resource interval passed, limit not yet exceeded, ready to be requested."
+                self.log.debug(msg,
+                               limit=resource.timings.rate_limit_remaining,
+                               resource_id=resource.id,
+                               resource_uri=resource.uri)
                 return True
 
         def check_interval(next_fx):
             if resource.timings.has_interval_passed():
                 return next_fx()
             else:
-                self.log.debug("resource [%s] waiting for interval." % resource.__repr__())
+                self.log.debug("resource waiting for interval.",
+                               resource_id=resource.id,
+                               resource_uri=resource.uri)
                 return False, ResourceStates.WaitingForInterval
 
         def then_check_timings(next_fx):
