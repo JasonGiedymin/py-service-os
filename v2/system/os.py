@@ -12,11 +12,14 @@ __author__ = 'jason'
 
 
 class ServiceManager(BaseService):
+    """
+    ServiceManager is in charge of starting or stopping services.
+    """
     family_latency = scales.HistogramAggregationStat('latency')
 
-    def __init__(self, name):
+    def __init__(self, name, parent_logger=None):
         scales.init(self, '/service-manager')
-        BaseService.__init__(self, name)
+        BaseService.__init__(self, name, parent_logger=parent_logger)
         self._directory = {}
         self.started_services = Queue()
         self._directory_service_proxy = DirectoryService(self._directory)
@@ -66,14 +69,19 @@ class ServiceManager(BaseService):
 
 
 class Scheduler(BaseService):
-
+    """
+    The scheduler at this point is in charge of scheduling a service action
+    with a local or group of service managers or a mix with remote service
+    managers.
+    """
     def event_loop_next(self):
         return EventLoopStates(self.event_loop_state.next())._name_
 
-    def __init__(self, name):
-        BaseService.__init__(self, name)
-        self._service_manager = ServiceManager("service-manager")  # workers each handle one rest endpoint
+    def __init__(self, name, parent_logger=None):
+        BaseService.__init__(self, name, parent_logger=parent_logger)
+        self._service_manager = ServiceManager("service-manager", parent_logger=self.log)  # workers each handle one rest endpoint
         self.event_loop_state = RoundRobinIndexer(2)
+        self.log.debug("Initialized.")
 
     def event_loop(self):
         while self._service_state:
@@ -102,3 +110,47 @@ class Scheduler(BaseService):
         self._service_manager.stop_services()
         self._service_manager.stop()
         BaseService.stop(self)
+
+
+class CannedOS(BaseService):
+    """
+    OS -> Scheduler -> ServiceManager -> DirectoryService
+                                      -> Services
+
+    There is an operating system defined as OS.
+
+    The OS runs a scheduler service named Scheduler, which runs
+    core services. An example core service is the ServiceManager.
+
+    ServiceManager serves to manage services, but interaction with
+    it is through the scheduler.
+
+    A custom service which is started by the ServiceManager
+    is a service catalogue named DirectoryService. All services
+    are registered with it and other services can find each other
+    with the directory.
+
+    Starting and stopping of services are done by the ServiceManager.
+    """
+    def __init__(self, name):
+        BaseService.__init__(self, name)
+        self.scheduler = Scheduler("scheduler", parent_logger=self.log)
+
+    def bootup(self):
+        self.log.debug("booting up...")
+        self.scheduler.start()
+
+    def shutdown(self):
+        self.log.debug("shutting down...")
+        self.scheduler.stop()
+        self.stop()
+
+    def event_loop(self):
+        """
+        The event loop.
+        """
+        while True:
+            # with self.latency.time():
+            #     self.latency_window.mark()
+            print "OS says hi"
+            gevent.sleep(1)

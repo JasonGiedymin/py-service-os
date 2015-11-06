@@ -1,10 +1,10 @@
 __author__ = 'jason'
 
-# Ext
-import requests
-
 # Lib
-# from data import limits
+from v2.system.os import CannedOS
+
+# Ext
+import gevent
 
 # Global Cache
 # CacheControl will use DictCache by default
@@ -21,5 +21,13 @@ def main():
         'Authorization': "token %s" % token
     }
 
+    os = CannedOS("CannedOS")
+    os.bootup()
+
+    def stop():
+        os.shutdown()
+
+    stop_event = gevent.spawn_later(2, stop)
+    gevent.joinall([os.start(), stop_event])
 
 main()

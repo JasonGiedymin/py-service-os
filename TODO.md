@@ -122,11 +122,22 @@ need ms or ns.
     - [x] use structlog
     - [x] with child logging, might have to do something creative with subs
     - [x] when testing, use the test class or verify in test that correct logger name was created
+- [x] add proper child logging through out OS => removed new since that
+      would clear the context and then bind
+    - [x] issue with common parent logger naming 
+    - [x] issue with no name appearing in log
 - [*] analyzer app
     - [x] check for ownership
+    - [*] create canned os
     - [ ] make resource analyzer a service with supervisor?
-    - [ ] too many parent/child logs
-    - [ ] start of db interface (resource store)
+    - [-] ~~too many parent/child logs~~ I don't see this as the case any longer.
+    - [*] add logging to all v2.system.os components
+- [ ] db
+    - [ ] storing resource
+- [ ] queues 
+    - [ ] interface
+    - [ ] in-mem queue
+    - [ ] kafka queue
 - [ ] single app cli that can start any number of services
     - [ ] single VM service cat?
 - [ ] resource requestor

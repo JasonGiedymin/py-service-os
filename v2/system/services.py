@@ -45,23 +45,25 @@ class BaseService:
         #         # sleep or keep going
         pass
 
-    def __init__(self, name="base-service", directory_proxy=None):
+    def __init__(self, name="base-service", directory_proxy=None, parent_logger=None):
         self.uuid = uuid4()
-        self.unique_name = '/%s/%s' % (name, self.uuid)
+        self.unique_name = '%s/%s' % (name, self.uuid)
         scales.init(self, self.unique_name)
 
-        # self.log = logging.getLogger(self.unique_name)
-        # self.log.setLevel(logging.DEBUG)
-        # self.log.addHandler(self.console)
-        self.log = Logger.get_logger(self.unique_name)
+        if parent_logger is None:
+            self.name = "%s" % (self.unique_name)
+        else:
+            parent_name = parent_logger._context["name"]
+            self.name = "%s/%s" % (parent_name, self.unique_name)
 
-        print "%s - Init" % name
-        self.name = name
+        self.log = Logger.get_logger(self.name)
         self.greenlet = None
         self._service_state = BaseStates.Idle
 
         # directory service proxy
         self._directory_proxy = directory_proxy
+
+        self.log.debug("Initialized.")
 
     def register_child_stat(self, name):
         scales.initChild(self, name)
@@ -159,10 +161,11 @@ class OutputService(BaseService):
 class DirectoryService(BaseService):
     """
     Proxy for directory dictionary as opposed to the full
-    dictionary. At least to control mishaps.
+    dictionary. At least to control mishaps. This is
+    essentially a service catalogue.
     """
-    def __init__(self, service_manager_directory):
-        BaseService.__init__(self, "directory-service")
+    def __init__(self, service_manager_directory, parent_logger=None):
+        BaseService.__init__(self, "directory-service", parent_logger=parent_logger)
         self._service_manager_directory = service_manager_directory
 
     def event_loop(self):
@@ -187,37 +190,3 @@ class TestWorker(BaseService):
         while True:
             # print "%s - working" % self.name
             gevent.sleep(.5)
-
-#
-# class RequestSpec:
-#     def __init__(self):
-#         pass
-
-
-# class RequestWorker:
-#     # do work
-#     # take requestspec
-#     def __init__(self, spec):
-#         self.spec = spec
-#         self.greenlet = None
-#         self.on = False
-#
-#     def work(self):
-#         while self.on:
-#             # print("Working on http request")
-#             gevent.sleep(1)
-#
-#     def start(self):
-#         print "starting..."
-#         self.on = True
-#         self.greenlet = gevent.spawn(self.work)
-#         return self.greenlet
-#
-#     def stop(self):
-#         self.on = False
-#         # print "<- Stopped!"
-#         gevent.kill(self.greenlet)
-
-# w = RequestWorker(RequestSpec())
-# gevent.spawn_later(10, w.stop)
-# gevent.joinall([w.start()])
