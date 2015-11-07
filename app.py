@@ -2,6 +2,7 @@ __author__ = 'jason'
 
 # Lib
 from v2.system.os import CannedOS
+from v2.services.analyzer import AnalyzerService
 
 # Ext
 import gevent
@@ -22,6 +23,8 @@ def main():
     }
 
     os = CannedOS("CannedOS")
+    # os.scheduler.add_service()
+    os.schedule(AnalyzerService, "analyzer-service")
     os.bootup()
 
     def stop():

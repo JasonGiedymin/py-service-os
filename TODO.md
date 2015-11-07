@@ -126,12 +126,17 @@ need ms or ns.
       would clear the context and then bind
     - [x] issue with common parent logger naming 
     - [x] issue with no name appearing in log
-- [*] analyzer app
+- [x] analyzer work
     - [x] check for ownership
-    - [*] create canned os
-    - [ ] make resource analyzer a service with supervisor?
     - [-] ~~too many parent/child logs~~ I don't see this as the case any longer.
-    - [*] add logging to all v2.system.os components
+    - [x] add logging to all v2.system.os components
+- [x] create canned os
+    - [x] make resource analyzer a service
+    - [x] add analyzer service scaffold to canned os
+- [*] complete analyzer service
+    - [ ] be able to run
+    - [ ] be able to pull from queue interface to in-mem queue
+    - [ ] tests
 - [ ] db
     - [ ] storing resource
 - [ ] queues 

@@ -3,6 +3,7 @@ from v2.system.services import BaseService
 
 # System
 from uuid import uuid4
+import gevent
 
 __author__ = 'jason'
 
@@ -17,5 +18,13 @@ class AnalyzerService(BaseService):
     By this nature this service uses the BaseService class which
     within itself composities a greenlet.
     """
-    def __init__(self, name):
-        BaseService.__init__(self, name)
+    def __init__(self, name, parent_logger=None):
+        BaseService.__init__(self, name, parent_logger=parent_logger)
+
+    def event_loop(self):
+        """
+        The event loop.
+        """
+        while True:
+            self.log.debug("workin the URIs")
+            gevent.sleep(1)

@@ -69,13 +69,13 @@ class BaseService:
         scales.initChild(self, name)
 
     def start(self):
-        # print "%s - Starting..." % self.name
+        self.log.debug("Starting...")
         self.greenlet = gevent.spawn(self.event_loop)
         self._service_state = BaseStates.Started
         return self.greenlet
 
     def stop(self):
-        # print "%s - Stopping..." % self.name
+        self.log.debug("Stopping...")
         gevent.kill(self.greenlet)
         self._service_state = BaseStates.Stopped
         return self.greenlet

@@ -22,7 +22,7 @@ class ServiceManager(BaseService):
         BaseService.__init__(self, name, parent_logger=parent_logger)
         self._directory = {}
         self.started_services = Queue()
-        self._directory_service_proxy = DirectoryService(self._directory)
+        self._directory_service_proxy = DirectoryService(self._directory, parent_logger=self.log)
 
     def start(self):
         BaseService.start(self)
@@ -36,11 +36,11 @@ class ServiceManager(BaseService):
     def add_service(self, service, name):
         """
         Add service to service manager by name.
-        :param greenlet:
+        :param service:
         :param name:
         :return:
         """
-        print "service %s added" % name
+        self.log.debug("service %s added" % name)
         service.set_directory_service_proxy(self._directory_service_proxy)
         self._directory[name] = service
 
@@ -49,7 +49,7 @@ class ServiceManager(BaseService):
         :param greenlet:
         :return:
         """
-        print "stopping services..."
+        self.log.debug("stopping services...")
         service = self._directory_service_proxy.get_service(name)
         gevent.kill(service)
         self._directory.pop(service)
@@ -85,7 +85,6 @@ class Scheduler(BaseService):
 
     def event_loop(self):
         while self._service_state:
-            # print "--> %s" % self.event_loop_next()
             self.event_loop_next()
             gevent.sleep(.5)
 
@@ -114,8 +113,7 @@ class Scheduler(BaseService):
 
 class CannedOS(BaseService):
     """
-    OS -> Scheduler -> ServiceManager -> DirectoryService
-                                      -> Services
+    OS -> Scheduler -> ServiceManager -> DirectoryService -> UserService
 
     There is an operating system defined as OS.
 
@@ -131,6 +129,14 @@ class CannedOS(BaseService):
     with the directory.
 
     Starting and stopping of services are done by the ServiceManager.
+
+    The end user when adding user services uses the OS level method schedule().
+    Remember that all services are stored with the directory service.
+    User services however are named as a child of the OS, rather than
+    a named child of the fully qualified hierarchy. The only place where
+    a full name hierarchy is retained is with the core services (scheduler,
+    service manager, and directory service).
+
     """
     def __init__(self, name):
         BaseService.__init__(self, name)
@@ -145,12 +151,20 @@ class CannedOS(BaseService):
         self.scheduler.stop()
         self.stop()
 
+    def schedule(self, service_class, name):
+        """
+        Take a service and let the instaniation begin here.
+        :param service_class:
+        :param name:
+        :return:
+        """
+        service = service_class(name, parent_logger=self.log)
+        self.scheduler.add_service(service)
+
     def event_loop(self):
         """
         The event loop.
         """
         while True:
-            # with self.latency.time():
-            #     self.latency_window.mark()
-            print "OS says hi"
+            self.log.debug("OS says hi")
             gevent.sleep(1)
