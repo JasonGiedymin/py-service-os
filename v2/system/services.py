@@ -46,17 +46,28 @@ class BaseService:
         pass
 
     def __init__(self, name="base-service", directory_proxy=None, parent_logger=None):
-        self.uuid = uuid4()
-        self.unique_name = '%s/%s' % (name, self.uuid)
+        """
+        uuid - a uuid4 value for the service
+        alias - a colloquial alias
+        unique_name - a name which includes an easier to remember alias with the uuid
+
+        :param name:
+        :param directory_proxy:
+        :param parent_logger:
+        :return:
+        """
+        self.uuid = uuid4()  # unique uuid
+        self.alias = name  # name, may collide
+        self.unique_name = '%s/%s' % (self.alias, self.uuid)  # a unique name for this service, will always be unique
         scales.init(self, self.unique_name)
 
-        if parent_logger is None:
-            self.name = "%s" % (self.unique_name)
+        if parent_logger is None:  # no parent, use fq name
+            self.lineage = "%s" % self.unique_name
         else:
             parent_name = parent_logger._context["name"]
-            self.name = "%s/%s" % (parent_name, self.unique_name)
+            self.lineage = "%s/%s" % (parent_name, self.unique_name)
 
-        self.log = Logger.get_logger(self.name)
+        self.log = Logger.get_logger(self.lineage)
         self.greenlet = None
         self._service_state = BaseStates.Idle
 
@@ -69,13 +80,13 @@ class BaseService:
         scales.initChild(self, name)
 
     def start(self):
-        self.log.debug("Starting...")
+        self.log.info("Starting...")
         self.greenlet = gevent.spawn(self.event_loop)
         self._service_state = BaseStates.Started
         return self.greenlet
 
     def stop(self):
-        self.log.debug("Stopping...")
+        self.log.info("Stopping...")
         gevent.kill(self.greenlet)
         self._service_state = BaseStates.Stopped
         return self.greenlet
@@ -119,7 +130,7 @@ class BaseService:
         return self._directory_proxy
 
 
-class OutputService(BaseService):
+class QueuedService(BaseService):
     """
     This is a service which one expects output to be tracked. The mechanism
     is via the use of an output_queue of type gevent.Queue. Use this as an

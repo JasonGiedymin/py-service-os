@@ -4,12 +4,12 @@ import gevent
 
 # Lib
 from v2.system.os import Scheduler, ServiceManager
-from v2.system.services import BaseService, OutputService
+from v2.system.services import BaseService, QueuedService
 from v2.system.states import BaseStates
 from v2.system.exceptions import IdleActionException
 
 # Test helpers
-from mock_services import MockOutputService, TestWorker
+from mock_services import MockQueuedService, TestWorker
 
 
 def test_baseservice():
@@ -27,7 +27,8 @@ def test_baseservice():
 
     name = "base-service-1"
     base = BaseService(name)
-    assert base.name == name
+    assert base.alias == name
+    assert base.unique_name == '%s/%s' % (name, base.uuid)
     assert base.get_state() == BaseStates.Idle
     assert base.ready() is True  # ready == Idle
 
@@ -64,7 +65,8 @@ def test_baseservice_service_directory():
 
     name = "base-service-1"
     base = BaseService(name)
-    assert base.name == name
+    assert base.alias == name
+    assert base.unique_name == '%s/%s' % (name, base.uuid)
     assert base.get_state() == BaseStates.Idle
     assert base.ready() is True  # ready == Idle
 
@@ -88,7 +90,7 @@ def test_baseservice_service_directory():
 
 def test_output_service():
     # Test Output service class
-    output = OutputService("out-1")
+    output = QueuedService("out-1")
     assert output is not None
 
     output.put("1")
@@ -100,7 +102,7 @@ def test_output_service():
 
 
 def test_output_service_loop():
-    mock_output_service = MockOutputService()
+    mock_output_service = MockQueuedService()
 
     # join and block, waiting for event loop to execute once
     # and then exits. Mock manually controls the event loop.
@@ -119,7 +121,7 @@ def test_output_service_write():
     service_manager.add_service(test_worker_1, worker_name)
 
     # add output service
-    mock_output_service = MockOutputService()
+    mock_output_service = MockQueuedService()
     service_manager.add_service(mock_output_service, "mock-output-service")
 
     assert test_worker_1.get_state() == BaseStates.Idle
@@ -162,19 +164,6 @@ def test_scheduler():
     assert scheduler.get_services_count() == 2
 
 
-def test_service_manager():
-    manager = ServiceManager("service-manager-1")
-    d1 = manager._directory
-    assert d1 is not None
-
-    # direct mod to directory allowed
-    d1["test-1"] = 1
-    assert manager.get_service_count() == 1
-
-    d1.pop("test-1")
-    assert manager.get_service_count() == 0
-
-
 def test_directory_service():
     """
     Start test by getting the directory service
@@ -184,7 +173,8 @@ def test_directory_service():
     service_manager = ServiceManager("test-service-manager-1")
     directory_service = service_manager.get_directory_service_proxy()
     assert directory_service is not None
-    assert directory_service.name == "directory-service"
+    assert directory_service.alias == "directory-service"
+    assert directory_service.unique_name == '%s/%s' % ("directory-service", directory_service.uuid)
     assert directory_service.get_service_count() == 0
 
 
@@ -208,9 +198,9 @@ def test_os():
             # gevent.kill(self.service.get_greenlet())
             self.service.stop()
 
-    class TestOutputService(OutputService):
+    class TestQueuedService(QueuedService):
         def __init__(self):
-            OutputService.__init__(self, "mock-output-service")
+            QueuedService.__init__(self, "mock-output-service")
             self.event_loop_ack = False
 
         def event_loop(self):
@@ -226,7 +216,7 @@ def test_os():
     test_worker_1 = TestWorker("test-worker-1", worker_interval)
     scheduler.add_service(test_worker_1)
     scheduler.add_service(TestWorker("test-worker-2", worker_interval))
-    scheduler.add_service(TestOutputService())
+    scheduler.add_service(TestQueuedService())
     assert scheduler.get_services_count() == 3
 
     # test for existence of a service manager

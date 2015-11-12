@@ -42,17 +42,36 @@ class ServiceManager(BaseService):
         """
         self.log.debug("service %s added" % name)
         service.set_directory_service_proxy(self._directory_service_proxy)
+
+        if name in self._directory:
+            self.log.warn("service [%s] already exists" % name)
+            return False
+
         self._directory[name] = service
+        return True
 
     def stop_service(self, name):
         """
+        :param name:
+        :return:
         :param greenlet:
         :return:
         """
-        self.log.debug("stopping services...")
-        service = self._directory_service_proxy.get_service(name)
-        gevent.kill(service)
-        self._directory.pop(service)
+
+        if name in self._directory:
+            self.log.info("stopping service [%s]..." % name)
+            service = self._directory_service_proxy.get_service(name)
+
+            if not service.ready():
+                service.stop()
+                self.log.info("service [%s] stopped." % name)
+            else:
+                self.log.info("service [%s] already stopped." % name)
+
+            self._directory.pop(name)
+            return True
+
+        return False
 
     def stop_services(self):
         for pid_key, pid in self._directory.items():
@@ -92,7 +111,20 @@ class Scheduler(BaseService):
         return self._service_manager
 
     def add_service(self, service):
-        self._service_manager.add_service(service, service.name)
+        """
+        Calls service manager.
+        :param service:
+        :return:
+        """
+        return self._service_manager.add_service(service, service.alias)
+
+    def stop_service(self, name):
+        """
+        Calls service manager.
+        :param name:
+        :return:
+        """
+        return self._service_manager.stop_service(name)
 
     def get_services(self):
         return self.get_service_manager().get_services()
@@ -101,70 +133,20 @@ class Scheduler(BaseService):
         return self._service_manager.get_service_count()
 
     def start(self):
+        """
+        Starts the scheduler.
+        :return:
+        """
         BaseService.start(self)
         self._service_manager.start()
         return self.greenlet
 
     def stop(self):
+        """
+        Stops the scheduler.
+        :return:
+        """
         self._service_manager.stop_services()
         self._service_manager.stop()
         BaseService.stop(self)
 
-
-class CannedOS(BaseService):
-    """
-    OS -> Scheduler -> ServiceManager -> DirectoryService -> UserService
-
-    There is an operating system defined as OS.
-
-    The OS runs a scheduler service named Scheduler, which runs
-    core services. An example core service is the ServiceManager.
-
-    ServiceManager serves to manage services, but interaction with
-    it is through the scheduler.
-
-    A custom service which is started by the ServiceManager
-    is a service catalogue named DirectoryService. All services
-    are registered with it and other services can find each other
-    with the directory.
-
-    Starting and stopping of services are done by the ServiceManager.
-
-    The end user when adding user services uses the OS level method schedule().
-    Remember that all services are stored with the directory service.
-    User services however are named as a child of the OS, rather than
-    a named child of the fully qualified hierarchy. The only place where
-    a full name hierarchy is retained is with the core services (scheduler,
-    service manager, and directory service).
-
-    """
-    def __init__(self, name):
-        BaseService.__init__(self, name)
-        self.scheduler = Scheduler("scheduler", parent_logger=self.log)
-
-    def bootup(self):
-        self.log.debug("booting up...")
-        self.scheduler.start()
-
-    def shutdown(self):
-        self.log.debug("shutting down...")
-        self.scheduler.stop()
-        self.stop()
-
-    def schedule(self, service_class, name):
-        """
-        Take a service and let the instaniation begin here.
-        :param service_class:
-        :param name:
-        :return:
-        """
-        service = service_class(name, parent_logger=self.log)
-        self.scheduler.add_service(service)
-
-    def event_loop(self):
-        """
-        The event loop.
-        """
-        while True:
-            self.log.debug("OS says hi")
-            gevent.sleep(1)

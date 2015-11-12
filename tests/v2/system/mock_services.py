@@ -1,6 +1,6 @@
 import gevent
 
-from v2.system.services import OutputService, BaseStates, BaseService
+from v2.system.services import QueuedService, BaseStates, BaseService
 
 __author__ = 'jason'
 
@@ -25,10 +25,10 @@ class TestWorker(BaseService):
             self.ack = True
 
 
-class MockOutputService(OutputService):
+class MockQueuedService(QueuedService):
     def __init__(self):
         name = "mock-output-service"
-        OutputService.__init__(self, name)
+        QueuedService.__init__(self, name)
         self.register_child_stat(name)
         self.event_loop_ack = False
 

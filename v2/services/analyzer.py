@@ -1,8 +1,8 @@
 # Lib
 from v2.system.services import BaseService
+from v2.data.processors.resource import ResourceAnalyzer
 
 # System
-from uuid import uuid4
 import gevent
 
 __author__ = 'jason'
@@ -20,11 +20,26 @@ class AnalyzerService(BaseService):
     """
     def __init__(self, name, parent_logger=None):
         BaseService.__init__(self, name, parent_logger=parent_logger)
+        self.analyzer = ResourceAnalyzer("resource-analyzer", self.log)
+        self.db = None
+        self.queue = None
+
+    def set_db(self, db):
+        self.db = db
+
+    def set_queue(self, queue):
+        self.queue = queue
 
     def event_loop(self):
         """
         The event loop.
         """
         while True:
-            self.log.debug("workin the URIs")
-            gevent.sleep(1)
+            # self.log.debug("Size now: %d" % self.queue.analyzer_size())
+            resource = self.queue.get_analyze()
+
+            if resource is not None:
+                if self.analyzer.can_request(resource):
+                    self.queue.put_requests(resource)
+
+            gevent.idle()

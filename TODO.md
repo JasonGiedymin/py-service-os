@@ -133,15 +133,26 @@ need ms or ns.
 - [x] create canned os
     - [x] make resource analyzer a service
     - [x] add analyzer service scaffold to canned os
-- [*] complete analyzer service
-    - [ ] be able to run
-    - [ ] be able to pull from queue interface to in-mem queue
-    - [ ] tests
-- [ ] db
-    - [ ] storing resource
-- [ ] queues 
-    - [ ] interface
-    - [ ] in-mem queue
+- [x] complete analyzer service
+    - [x] break out service_manager into own test
+    - [x] add stop service from scheduler (which just proxies to service_manager
+    - [x] be able to run => bootup
+    - [x] be able to pull from queue interface to in-mem queue
+    - [x] tests
+- [x] db part 1
+    - [x] start on BaseDB interface
+    - [x] in mem db
+- [x] queues part 1 
+    - [x] start on BaseQueue interface
+    - [x] in-mem queue
+- [*] canned os
+    - [ ] code requestor service
+    - [ ] add requestor service
+    - [ ] add output service
+    - [ ] coverage check
+- [ ] db part 2
+    - [ ] cassandra
+- [ ] queue part 2
     - [ ] kafka queue
 - [ ] single app cli that can start any number of services
     - [ ] single VM service cat?
