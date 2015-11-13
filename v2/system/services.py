@@ -42,7 +42,7 @@ class BaseService:
         #     with self.latency.time():
         #         self.latency_window.mark()
         #         # do some work here
-        #         # sleep or keep going
+        #         # sleep or idle
         pass
 
     def __init__(self, name="base-service", directory_proxy=None, parent_logger=None):
@@ -79,6 +79,15 @@ class BaseService:
     def register_child_stat(self, name):
         scales.initChild(self, name)
 
+    def register(self):
+        """
+        Once a service has been actively managed, it is populated
+        by the service manager with addtional information or services.
+        This method registers that data.
+        :return:
+        """
+        pass
+
     def start(self):
         self.log.info("Starting...")
         self.greenlet = gevent.spawn(self.event_loop)
@@ -87,7 +96,12 @@ class BaseService:
 
     def stop(self):
         self.log.info("Stopping...")
-        gevent.kill(self.greenlet)
+
+        if self.greenlet is not None:
+            gevent.kill(self.greenlet)
+        else:
+            self.log.warn("service [%s] was found already stopped." % self.lineage)
+
         self._service_state = BaseStates.Stopped
         return self.greenlet
 
@@ -195,7 +209,6 @@ class DirectoryService(BaseService):
 class TestWorker(BaseService):
     def __init__(self, name):
         BaseService.__init__(self, name)
-        # self.name = "test-worker-1"
 
     def event_loop(self):
         while True:

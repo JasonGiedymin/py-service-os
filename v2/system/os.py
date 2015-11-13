@@ -23,6 +23,7 @@ class ServiceManager(BaseService):
         self._directory = {}
         self.started_services = Queue()
         self._directory_service_proxy = DirectoryService(self._directory, parent_logger=self.log)
+        self.set_directory_service_proxy(self._directory_service_proxy)  # since BaseService declares an interface
 
     def start(self):
         BaseService.start(self)
@@ -42,6 +43,7 @@ class ServiceManager(BaseService):
         """
         self.log.debug("service %s added" % name)
         service.set_directory_service_proxy(self._directory_service_proxy)
+        service.register()  # trigger and registration of data
 
         if name in self._directory:
             self.log.warn("service [%s] already exists" % name)
@@ -86,6 +88,9 @@ class ServiceManager(BaseService):
     def get_services(self):
         return self._directory.items()
 
+    def get_service(self, service_id):
+        return self.get_directory_service_proxy().get_service(service_id)
+
 
 class Scheduler(BaseService):
     """
@@ -98,14 +103,20 @@ class Scheduler(BaseService):
 
     def __init__(self, name, parent_logger=None):
         BaseService.__init__(self, name, parent_logger=parent_logger)
-        self._service_manager = ServiceManager("service-manager", parent_logger=self.log)  # workers each handle one rest endpoint
+
+        # workers each handle one rest endpoint
+        self._service_manager = ServiceManager("service-manager", parent_logger=self.log)
+
+        self.set_directory_service_proxy(self._service_manager.get_directory_service_proxy())
+
         self.event_loop_state = RoundRobinIndexer(2)
         self.log.debug("Initialized.")
 
     def event_loop(self):
         while self._service_state:
             self.event_loop_next()
-            gevent.sleep(.5)
+            # gevent.sleep(.5)
+            gevent.idle()
 
     def get_service_manager(self):
         return self._service_manager

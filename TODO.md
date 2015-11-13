@@ -146,6 +146,9 @@ need ms or ns.
     - [x] start on BaseQueue interface
     - [x] in-mem queue
 - [*] canned os
+    - [x] swap out hard coded db and queue with services
+    - [ ] fix bug with log name not showing for database, queue, and initializer service entries when stopping
+          => might have to do with logs from both service manager and base service stop() methods
     - [ ] code requestor service
     - [ ] add requestor service
     - [ ] add output service

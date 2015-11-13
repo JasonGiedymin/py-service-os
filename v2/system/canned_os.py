@@ -42,6 +42,7 @@ class CannedOS(BaseService):
     def bootup(self):
         self.log.info("booting up...")
         self.scheduler.start()
+        self.set_directory_service_proxy(self.scheduler.get_directory_service_proxy())
 
     def shutdown(self):
         self.log.info("shutting down...")
@@ -71,5 +72,4 @@ class CannedOS(BaseService):
         The event loop.
         """
         while True:
-            self.log.debug("OS says hi")
-            gevent.sleep(1)
+            gevent.idle()

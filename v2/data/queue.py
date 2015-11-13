@@ -7,12 +7,67 @@ __author__ = 'jason'
 class BaseQueue(object):
     __metaclass__ = ABCMeta
 
+    # -- Analyzer --
     @abstractmethod
     def get_analyze(self):
         raise NotImplementedError("Please Implement this method")
 
     @abstractmethod
     def put_analyze(self, item):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
+    def analyzer_size(self):
+        raise NotImplementedError("Please Implement this method")
+
+    # -- Requestor --
+    @abstractmethod
+    def get_requests(self):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
+    def put_requests(self, item):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
+    def requests_size(self):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
+    def get_requests_error(self):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
+    def put_requests_error(self, item):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
+    def requests_error_size(self):
+        raise NotImplementedError("Please Implement this method")
+
+    # -- Publish --
+    @abstractmethod
+    def get_publish(self):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
+    def put_publish(self, item):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
+    def publish_size(self):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
+    def get_publish_error(self):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
+    def put_publish_error(self, item):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
+    def publish_error_size(self):
         raise NotImplementedError("Please Implement this method")
 
 

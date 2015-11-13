@@ -1,12 +1,24 @@
 # Lib
 from v2.system.services import BaseService
-# from v2.data.db import MemDB
-# from v2.data.queue import MemQueue
+from v2.data.timings import ResourceTimings, Resource
 
 # System
 import gevent
 
 __author__ = 'jason'
+
+
+def github_events_resource():
+    token = 'c0698ac78b8f29412f9a358bacd2d34711cdf217'
+    headers = {
+        'User-Agent': 'CodeStats-Machine',
+        'Authorization': "token %s" % token
+    }
+
+    timings = ResourceTimings()
+    resource = Resource("https://api.github.com/events", timings, send_headers=headers)
+
+    return resource
 
 
 class InitializerService(BaseService):
@@ -20,11 +32,14 @@ class InitializerService(BaseService):
         self.queue = None
         self.registered = {}  # simple dict keeping resources already registered
 
-    def set_db(self, db):
-        self.db = db
+    def seed_data(self):
+        self.db.save_resource(github_events_resource())
+        self.log.debug("data seeded, entry count: [%d]." % self.db.resource_count())
 
-    def set_queue(self, queue):
-        self.queue = queue
+    def register(self):
+        self.db = self.get_directory_service_proxy().get_service("database-service")
+        self.queue = self.get_directory_service_proxy().get_service("queue-service")
+        self.seed_data()
 
     def event_loop(self):
         """

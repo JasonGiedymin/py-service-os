@@ -9,11 +9,23 @@ class BaseDB(object):
         raise NotImplementedError("Please Implement this method")
 
     @abstractmethod
+    def save_resource_with_key(self, resource, key):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
     def get_resource(self, key):
         raise NotImplementedError("Please Implement this method")
 
     @abstractmethod
+    def get_resources(self):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
     def update_resource(self, resource, key):
+        raise NotImplementedError("Please Implement this method")
+
+    @abstractmethod
+    def resource_count(self):
         raise NotImplementedError("Please Implement this method")
 
 
@@ -44,3 +56,6 @@ class MemDB(BaseDB):
 
     def update_resource(self, resource, key):
         return self.save_resource(resource, key)
+
+    def resource_count(self):
+        return len(self.resources)

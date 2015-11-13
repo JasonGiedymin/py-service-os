@@ -21,14 +21,13 @@ class AnalyzerService(BaseService):
     def __init__(self, name, parent_logger=None):
         BaseService.__init__(self, name, parent_logger=parent_logger)
         self.analyzer = ResourceAnalyzer("resource-analyzer", self.log)
-        self.db = None
         self.queue = None
-
-    def set_db(self, db):
-        self.db = db
 
     def set_queue(self, queue):
         self.queue = queue
+
+    def register(self):
+        self.queue = self.get_directory_service_proxy().get_service("queue-service")
 
     def event_loop(self):
         """
@@ -36,9 +35,11 @@ class AnalyzerService(BaseService):
         """
         while True:
             # self.log.debug("Size now: %d" % self.queue.analyzer_size())
-            resource = self.queue.get_analyze()
+            resource = self.queue.get_analyze()  # pop from queue
 
-            if resource is not None:
+            if resource is not None:  # if an item exists
+                # dirs = self.get_directory_service_proxy()
+
                 if self.analyzer.can_request(resource):
                     self.queue.put_requests(resource)
 

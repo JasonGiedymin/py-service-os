@@ -2,6 +2,8 @@
 from v2.system.canned_os import CannedOS
 from v2.services.analyzer import AnalyzerService
 from v2.services.initializer import InitializerService
+from v2.services.db import DBService
+from v2.services.queue import QueueService
 from v2.data.db import MemDB
 from v2.data.queue import MemQueue
 from v2.data.timings import ResourceTimings, Resource
@@ -37,31 +39,35 @@ def main():
 
     # needed objects
     os = CannedOS("CannedOS")
-    mem_db = MemDB()
-    mem_queue = MemQueue()
-
-    # add entries to mem queue
-    mem_db.save_resource(github_events_resource())
+    # mem_db = MemDB()
+    # mem_queue = MemQueue()
+    #
+    # # add entries to mem queue
+    # mem_db.save_resource(github_events_resource())
 
     # create initializer
-    initializer = InitializerService("initializer-service")
-    initializer.db = mem_db
-    initializer.queue = mem_queue
+    # initializer = InitializerService("initializer-service")
+    # initializer.db = mem_db
+    # initializer.queue = mem_queue
 
     # create analyzer and continue setup
-    analyzer = AnalyzerService("analyzer-service")
-    analyzer.db = mem_db
-    analyzer.queue = mem_queue
+    # analyzer = AnalyzerService("analyzer-service")
+    # analyzer.db = mem_db
+    # analyzer.queue = mem_queue
 
-    # os.schedule(AnalyzerServiceInMem, "analyzer-service")
-    os.schedule_provided_service(analyzer)
-    os.schedule_provided_service(initializer)
     os.bootup()
+
+    os.schedule_service(DBService, "database-service")
+    os.schedule_service(QueueService, "queue-service")
+    os.schedule_service(AnalyzerService, "analyzer-service")
+    # os.schedule_provided_service(analyzer)
+    os.schedule_service(InitializerService, "initializer-service")
+    # os.schedule_provided_service(initializer)
 
     def stop():
         os.shutdown()
 
-    stop_event = gevent.spawn_later(2, stop)
+    stop_event = gevent.spawn_later(5, stop)
     gevent.joinall([os.start(), stop_event])
 
 main()
