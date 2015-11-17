@@ -31,24 +31,26 @@ __author__ = 'jason'
 
 class RequestorService(BaseService):
     """
-    Put resources into a queue.
+    Requests resources.
     """
     def __init__(self, name, parent_logger=None):
         BaseService.__init__(self, name, parent_logger=parent_logger)
-        self.current_batch = []
-        self.db = None
         self.queue = None
-        self.registered = {}  # simple dict keeping resources already registered
-
-    def set_db(self, db):
-        self.db = db
 
     def set_queue(self, queue):
         self.queue = queue
+
+    def register(self):
+        self.queue = self.get_directory_service_proxy().get_service("queue-service")
 
     def event_loop(self):
         """
         The event loop.
         """
         while True:
+            # get resource from request queue
+            # request data
+            # send data to publish
+            # send resource back to analyze
+
             gevent.idle()

@@ -147,8 +147,9 @@ need ms or ns.
     - [x] in-mem queue
 - [*] canned os
     - [x] swap out hard coded db and queue with services
-    - [ ] fix bug with log name not showing for database, queue, and initializer service entries when stopping
+    - [x] fix bug with log name not showing for database, queue, and initializer service entries when stopping
           => might have to do with logs from both service manager and base service stop() methods
+    - [x] start of `checks.md` to keep track of simple searches which should modify the build flow
     - [ ] code requestor service
     - [ ] add requestor service
     - [ ] add output service
@@ -168,7 +169,6 @@ need ms or ns.
 - [ ] store all vars (request spec, timing, etc...) in a dict, key'ed by uri, allowing
       multiple requests to be handled by one machine. First pass should be blocking.
 - [ ] next up make each get spawn and return a future, saved in
-
 
 ## v0.0.3.0 - UniqueClass
 - [?] UniqueService class?
@@ -196,7 +196,7 @@ need ms or ns.
 ## v0.0.x.0 - Cleanup
 - [ ] Config file
 - [ ] Commandline params
-
+- [ ] stop passing around parent logger, just use lineage or some such
 
 ## Bucket
 - [ ] ...

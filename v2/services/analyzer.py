@@ -20,7 +20,7 @@ class AnalyzerService(BaseService):
     """
     def __init__(self, name, parent_logger=None):
         BaseService.__init__(self, name, parent_logger=parent_logger)
-        self.analyzer = ResourceAnalyzer("resource-analyzer", self.log)
+        self.analyzer = ResourceAnalyzer("resource-analyzer", parent_logger=self.log)
         self.queue = None
 
     def set_queue(self, queue):

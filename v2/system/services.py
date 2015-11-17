@@ -95,7 +95,7 @@ class BaseService:
         return self.greenlet
 
     def stop(self):
-        self.log.info("Stopping...")
+        self.log.debug("Stopping...")
 
         if self.greenlet is not None:
             gevent.kill(self.greenlet)
