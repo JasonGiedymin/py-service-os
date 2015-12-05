@@ -12,8 +12,8 @@ class DBService(BaseService, BaseDB):
     """
     Database service proxy.
     """
-    def __init__(self, name, parent_logger=None):
-        BaseService.__init__(self, name, parent_logger=parent_logger)
+    def __init__(self, name, parent_logger=None, enable_service_recovery=False):
+        BaseService.__init__(self, name, parent_logger=parent_logger, enable_service_recovery=enable_service_recovery)
         self.db = MemDB()  # db implementation
 
     # below methods are proxies to the db interface
@@ -34,9 +34,3 @@ class DBService(BaseService, BaseDB):
 
     def resource_count(self):
         return self.db.resource_count()
-
-    def event_loop(self):
-        """
-        The event loop.
-        """
-        gevent.idle()

@@ -40,6 +40,11 @@ class CannedOS(BaseService):
         self.scheduler = Scheduler("scheduler", parent_logger=self.log)
 
     def bootup(self):
+        """
+        Boots up the OS and any services which the scheduler has
+        scheduled.
+        :return:
+        """
         self.log.info("booting up...")
         self.scheduler.start()
         self.set_directory_service_proxy(self.scheduler.get_directory_service_proxy())
@@ -49,14 +54,15 @@ class CannedOS(BaseService):
         self.scheduler.stop()
         self.stop()
 
-    def schedule_service(self, service_class, name):
+    def schedule_service(self, service_class, name, enable_service_recovery=False):
         """
         Take a service and let the instaniation begin here.
         :param service_class:
         :param name:
+        :param enable_service_recovery:
         :return:
         """
-        service = service_class(name, parent_logger=self.log)
+        service = service_class(name, parent_logger=self.log, enable_service_recovery=enable_service_recovery)
         self.scheduler.add_service(service)
 
     def schedule_provided_service(self, service):
@@ -71,5 +77,5 @@ class CannedOS(BaseService):
         """
         The event loop.
         """
-        while True:
+        while self.should_loop():
             gevent.idle()

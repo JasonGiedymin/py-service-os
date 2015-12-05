@@ -10,20 +10,14 @@ __author__ = 'jason'
 
 class QueueService(BaseService, BaseQueue):
     """
-    Database service proxy.
+    Queue service proxy.
     """
 
-    def __init__(self, name, parent_logger=None):
-        BaseService.__init__(self, name, parent_logger=parent_logger)
-        self.queue = MemQueue  # db implementation
+    def __init__(self, name, parent_logger=None, enable_service_recovery=False):
+        BaseService.__init__(self, name, parent_logger=parent_logger, enable_service_recovery=enable_service_recovery)
+        self.queue = MemQueue()  # queue implementation
 
-    def event_loop(self):
-        """
-        The event loop.
-        """
-        gevent.idle()
-
-    # below methods are proxies to the db interface
+    # below methods are proxies to the queue interface
     # -- Analyzer --
     def get_analyze(self):
         return self.queue.get_analyze()

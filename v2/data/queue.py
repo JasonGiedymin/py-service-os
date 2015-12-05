@@ -109,6 +109,10 @@ class MemQueue(BaseQueue):
 
     # -- Requestor --
     def get_requests(self):
+        """
+        Get a single item from the request queue.
+        :return:
+        """
         return self.requests.get()
 
     def put_requests(self, item):

@@ -18,8 +18,8 @@ class AnalyzerService(BaseService):
     By this nature this service uses the BaseService class which
     within itself composities a greenlet.
     """
-    def __init__(self, name, parent_logger=None):
-        BaseService.__init__(self, name, parent_logger=parent_logger)
+    def __init__(self, name, parent_logger=None, enable_service_recovery=False):
+        BaseService.__init__(self, name, parent_logger=parent_logger, enable_service_recovery=enable_service_recovery)
         self.analyzer = ResourceAnalyzer("resource-analyzer", parent_logger=self.log)
         self.queue = None
 
@@ -34,13 +34,20 @@ class AnalyzerService(BaseService):
         The event loop.
         """
         while True:
-            # self.log.debug("Size now: %d" % self.queue.analyzer_size())
+            # Don't do the below commented line, as the event loop will run fast
+            # and will result in multiple lines being printed! Also that many of
+            # log entries makes it confusing when narrowing down things. It is
+            # better to tie a logging event to a logical event such as when a
+            # resource may be requested (see below `can_request` method).
+            # # don't do this -> self.log.debug("Size now: %d" % self.queue.analyzer_size())
+
             resource = self.queue.get_analyze()  # pop from queue
 
             if resource is not None:  # if an item exists
                 # dirs = self.get_directory_service_proxy()
 
                 if self.analyzer.can_request(resource):
-                    self.queue.put_requests(resource)
+                    size = self.queue.put_requests(resource)
+                    self.log.debug("resource put on request queue, size: [%d]" % size)
 
             gevent.idle()

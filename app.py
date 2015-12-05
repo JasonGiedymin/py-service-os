@@ -2,6 +2,7 @@
 from v2.system.canned_os import CannedOS
 from v2.services.analyzer import AnalyzerService
 from v2.services.initializer import InitializerService
+from v2.services.requestor import RequestorService
 from v2.services.db import DBService
 from v2.services.queue import QueueService
 from v2.data.db import MemDB
@@ -57,11 +58,12 @@ def main():
 
     os.bootup()
 
-    os.schedule_service(DBService, "database-service")
-    os.schedule_service(QueueService, "queue-service")
-    os.schedule_service(AnalyzerService, "analyzer-service")
+    os.schedule_service(DBService, "database-service", True)
+    os.schedule_service(QueueService, "queue-service", True)
+    os.schedule_service(AnalyzerService, "analyzer-service", True)
+    os.schedule_service(InitializerService, "initializer-service", True)
+    os.schedule_service(RequestorService, "requestor-service", True)
     # os.schedule_provided_service(analyzer)
-    os.schedule_service(InitializerService, "initializer-service")
     # os.schedule_provided_service(initializer)
 
     def stop():

@@ -33,8 +33,8 @@ class RequestorService(BaseService):
     """
     Requests resources.
     """
-    def __init__(self, name, parent_logger=None):
-        BaseService.__init__(self, name, parent_logger=parent_logger)
+    def __init__(self, name, parent_logger=None, enable_service_recovery=False):
+        BaseService.__init__(self, name, parent_logger=parent_logger, enable_service_recovery=enable_service_recovery)
         self.queue = None
 
     def set_queue(self, queue):
@@ -47,10 +47,21 @@ class RequestorService(BaseService):
         """
         The event loop.
         """
-        while True:
+        while self.should_loop():
             # get resource from request queue
             # request data
             # send data to publish
             # send resource back to analyze
+            resource = self.queue.get_requests()  # pop from queue
 
+            if resource is not None:  # if an item exists
+                # dirs = self.get_directory_service_proxy()
+
+                # if self.analyzer.can_request(resource):
+                #     size = self.queue.put_requests(resource)
+                #     self.log.debug("resource ready, current request queue size: [%d]" % size)
+                self.log.debug("have resource, trying to request")
+                self.queue.put_analyze(resource)
+
+            gevent.sleep(.5)
             gevent.idle()

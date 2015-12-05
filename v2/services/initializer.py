@@ -9,6 +9,11 @@ __author__ = 'jason'
 
 
 def github_events_resource():
+    """
+    Generate an initial event, in this case a github event.
+
+    :return:
+    """
     token = 'c0698ac78b8f29412f9a358bacd2d34711cdf217'
     headers = {
         'User-Agent': 'CodeStats-Machine',
@@ -25,12 +30,12 @@ class InitializerService(BaseService):
     """
     Put resources into a queue.
     """
-    def __init__(self, name, parent_logger=None):
-        BaseService.__init__(self, name, parent_logger=parent_logger)
+    def __init__(self, name, parent_logger=None, enable_service_recovery=False):
+        BaseService.__init__(self, name, parent_logger=parent_logger, enable_service_recovery=enable_service_recovery)
         self.current_batch = []
         self.db = None
         self.queue = None
-        self.registered = {}  # simple dict keeping resources already registered
+        self.registered = {}  # simple dict cache keeping resources already registered
 
     def seed_data(self):
         self.db.save_resource(github_events_resource())
@@ -44,16 +49,17 @@ class InitializerService(BaseService):
     def event_loop(self):
         """
         The event loop.
+        Resource reloading is disabled at the moment.
         """
         while True:
             for res_uri, res in self.db.get_resources():
                 if res_uri not in self.registered:
                     self.queue.put_analyze(res)
                     self.registered[res_uri] = res
-                    self.log.info("registered new resource, id:[%s], uri:[%s]" % (res.id, res_uri))
+                    self.log.info("registered new resource, id:[%s], uri:[%s], size: [%d]" % (res.id, res_uri, self.queue.analyzer_size()))
                 # else:  # resource already exists
                     # if resource.reload:  # check if it needs reloading
                     #     self.registered.pop(resource.id)  # popping it will reload it next loop
                     #     self.log.debug("resource set to be reloaded, id:[%s], uri:[%s]" % (resource.id, resource.uri))
 
-                gevent.idle()
+            gevent.idle()
