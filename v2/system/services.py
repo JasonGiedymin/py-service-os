@@ -5,7 +5,7 @@ from greplin import scales
 from greplin.scales import meter
 
 from v2.system.states import BaseStates
-from v2.system.exceptions import IdleActionException
+from v2.system.exceptions import IdleActionException, ServiceNotIdleException
 from v2.utils.loggers import Logger
 
 
@@ -42,40 +42,85 @@ class BaseService:
         #     with self.latency.time():
         #         self.latency_window.mark()
         #         # do some work here
-        #         # sleep or keep going
-        pass
+        #         # sleep or idle
+        while self.should_loop():
+            gevent.idle()
 
-    def __init__(self, name="base-service", directory_proxy=None):
-        self.uuid = uuid4()
-        self.unique_name = '/%s/%s' % (name, self.uuid)
+    def should_loop(self):
+        # return not self.ready() or not self.has_stopped()
+        # chose to signal on if the service has started rather than started or idle
+        # which would be a confusing state which a loop would be allowed execution.
+        # In an effort to narrow down to one state I choose `started`.
+        return self.has_started()
+
+    def __init__(self, name="base-service", directory_proxy=None, parent_logger=None, enable_service_recovery=False):
+        """
+        uuid - a uuid4 value for the service
+        alias - a colloquial alias
+        unique_name - a name which includes an easier to remember alias with the uuid
+
+        :param name:
+        :param directory_proxy:
+        :param parent_logger:
+        :return:
+        """
+        self.uuid = uuid4()  # unique uuid
+        self.alias = name  # name, may collide
+        self.unique_name = '%s/%s' % (self.alias, self.uuid)  # a unique name for this service, will always be unique
         scales.init(self, self.unique_name)
 
-        # self.log = logging.getLogger(self.unique_name)
-        # self.log.setLevel(logging.DEBUG)
-        # self.log.addHandler(self.console)
-        self.log = Logger.get_logger(self.unique_name)
+        if parent_logger is None:  # no parent, use fq name
+            self.lineage = "%s" % self.unique_name
+        else:
+            parent_name = parent_logger._context["name"]
+            self.lineage = "%s/%s" % (parent_name, self.unique_name)
 
-        print "%s - Init" % name
-        self.name = name
+        self.log = Logger.get_logger(self.lineage)
         self.greenlet = None
-        self._service_state = BaseStates.Idle
+        self.set_state(BaseStates.Idle)
 
         # directory service proxy
         self._directory_proxy = directory_proxy
 
+        # service recovery option
+        self.enable_service_recovery = enable_service_recovery
+
+        self.log.debug("Initialized.")
+
     def register_child_stat(self, name):
         scales.initChild(self, name)
 
+    def register(self):
+        """
+        Once a service has been actively managed, it is populated
+        by the service manager with addtional information or services.
+        This method registers that data.
+        Typically you will find a database and queue proxy to be set
+        here.
+        :return:
+        """
+        pass
+
     def start(self):
-        # print "%s - Starting..." % self.name
+        self.log.info("Starting...")
+
+        if self.get_state() is not BaseStates.Idle:  # or not self.enable_service_recovery:
+            self.log.error("could not start service as it is not in an idle state, current state: [%s]" % self.get_state())
+            raise ServiceNotIdleException()
+
         self.greenlet = gevent.spawn(self.event_loop)
-        self._service_state = BaseStates.Started
+        self.set_state(BaseStates.Started)
         return self.greenlet
 
     def stop(self):
-        # print "%s - Stopping..." % self.name
-        gevent.kill(self.greenlet)
-        self._service_state = BaseStates.Stopped
+        self.log.info("Stopping...")
+
+        if self.greenlet is not None:
+            gevent.kill(self.greenlet)
+        else:
+            self.log.warn("service [%s] was found already stopped." % self.lineage)
+
+        self.set_state(BaseStates.Stopped)
         return self.greenlet
 
     def get_greenlet(self):
@@ -95,9 +140,31 @@ class BaseService:
 
         return False
 
+    def has_started(self):
+        return self.get_state() is BaseStates.Started
+
+    def has_stopped(self):
+        return self.get_state() is BaseStates.Stopped
+
+    def has_state(self):
+        return self.get_state() is not None
+
+    def is_zombie(self):
+        """
+        If there is no state such as Idle, Start, or Stop then this service
+        is a zombie.
+        :return:
+        """
+        return not self.has_state() or not self.greenlet.started
+
     def idle(self):
-        if self.get_state() is BaseStates.Stopped:
-            self._service_state = BaseStates.Idle
+        """
+        Resets a service which you expect to restart.
+        Prior to started a service it must be set to idle.
+        :return:
+        """
+        if self.get_state() is BaseStates.Stopped or self.is_zombie():
+            self.set_state(BaseStates.Idle)
         else:
             raise IdleActionException()
 
@@ -108,6 +175,7 @@ class BaseService:
         """
         Should be used only by base class and inheritors
         """
+        self.log.debug("Service state is being set to: [%s]" % state)
         self._service_state = state
 
     def set_directory_service_proxy(self, directory_proxy):
@@ -117,7 +185,7 @@ class BaseService:
         return self._directory_proxy
 
 
-class OutputService(BaseService):
+class QueuedService(BaseService):
     """
     This is a service which one expects output to be tracked. The mechanism
     is via the use of an output_queue of type gevent.Queue. Use this as an
@@ -159,10 +227,11 @@ class OutputService(BaseService):
 class DirectoryService(BaseService):
     """
     Proxy for directory dictionary as opposed to the full
-    dictionary. At least to control mishaps.
+    dictionary. At least to control mishaps. This is
+    essentially a service catalogue.
     """
-    def __init__(self, service_manager_directory):
-        BaseService.__init__(self, "directory-service")
+    def __init__(self, service_manager_directory, parent_logger=None):
+        BaseService.__init__(self, "directory-service", parent_logger=parent_logger)
         self._service_manager_directory = service_manager_directory
 
     def event_loop(self):
@@ -181,43 +250,8 @@ class DirectoryService(BaseService):
 class TestWorker(BaseService):
     def __init__(self, name):
         BaseService.__init__(self, name)
-        # self.name = "test-worker-1"
 
     def event_loop(self):
         while True:
             # print "%s - working" % self.name
             gevent.sleep(.5)
-
-#
-# class RequestSpec:
-#     def __init__(self):
-#         pass
-
-
-# class RequestWorker:
-#     # do work
-#     # take requestspec
-#     def __init__(self, spec):
-#         self.spec = spec
-#         self.greenlet = None
-#         self.on = False
-#
-#     def work(self):
-#         while self.on:
-#             # print("Working on http request")
-#             gevent.sleep(1)
-#
-#     def start(self):
-#         print "starting..."
-#         self.on = True
-#         self.greenlet = gevent.spawn(self.work)
-#         return self.greenlet
-#
-#     def stop(self):
-#         self.on = False
-#         # print "<- Stopped!"
-#         gevent.kill(self.greenlet)
-
-# w = RequestWorker(RequestSpec())
-# gevent.spawn_later(10, w.stop)
-# gevent.joinall([w.start()])

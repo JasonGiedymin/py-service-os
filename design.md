@@ -39,7 +39,7 @@ Q -  Queue
 
 The various X apps will exist as greenlets, specified by the main system.
 
-- [ ] each X app should be Base System, part of an OS.
+- [ ] each X app should be a Base Service, part of an OS.
 
 ### States
 

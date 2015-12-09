@@ -96,7 +96,7 @@ need ms or ns.
     - [x] redo tests
     - [-] create states based on golang work:
 - [x] memory based queue for testing
-- [*] resource analyzer
+- [x] resource analyzer
     - [x] resource states
     - [x] direct unit test for resource analyzer
     - [x] on first init, resource has bad defaults. send in a spec or find some check to signal first call =>
@@ -122,11 +122,57 @@ need ms or ns.
     - [x] use structlog
     - [x] with child logging, might have to do something creative with subs
     - [x] when testing, use the test class or verify in test that correct logger name was created
-- [*] analyzer app
+- [x] add proper child logging through out OS => removed new since that
+      would clear the context and then bind
+    - [x] issue with common parent logger naming 
+    - [x] issue with no name appearing in log
+- [x] analyzer work
     - [x] check for ownership
-    - [ ] make resource analyzer a service with supervisor?
-    - [ ] too many parent/child logs
-    - [ ] start of db interface (resource store)
+    - [-] ~~too many parent/child logs~~ I don't see this as the case any longer.
+    - [x] add logging to all v2.system.os components
+- [x] create canned os
+    - [x] make resource analyzer a service
+    - [x] add analyzer service scaffold to canned os
+- [x] complete analyzer service
+    - [x] break out service_manager into own test
+    - [x] add stop service from scheduler (which just proxies to service_manager
+    - [x] be able to run => bootup
+    - [x] be able to pull from queue interface to in-mem queue
+    - [x] tests
+- [x] db part 1
+    - [x] start on BaseDB interface
+    - [x] in mem db
+- [x] queues part 1 
+    - [x] start on BaseQueue interface
+    - [x] in-mem queue
+- [x] fixed logging of services hierarchy
+- [x] fixed stopping of services to use the `stop_service()` method wrapper rather than the `stop()` service
+      directly bound to a service class implementation.
+- [x] canned os
+    - [x] swap out hard coded db and queue with services
+    - [x] fix bug with log name not showing for database, queue, and initializer service entries when stopping
+          => might have to do with logs from both service manager and base service stop() methods
+    - [x] start of `checks.md` to keep track of simple searches which should modify the build flow
+- [x] OS test shows that possible overlap when event loop occurrs and when a service is/has stopped/stopping,
+      fix by not looping if stopped.
+- [x] Fix OS test mock queue service as it was expecting a quick death. Mock service now takes a quick death
+      param.
+- [x] Fix `should_loop()` to only look at if a service has started to execute an event loop. An example of
+      where this would be a bug is if a service is set to stopped state yet the event loop continues on.
+      This is a zombie like process state which we try to prevent.
+- [x] Add flag for service recovery on the BaseService class.
+- [x] Add zombie detection
+- [x] Add code to recover zombie services if `enable_service_recovery` set to `True`
+- [x] Add code to `BaseService` with a default event loop, will fix implementors of `BaseService` from having to implement the event loop when one isn't needed
+- [ ] replace as many event loops possible with new loop `self.should_loop():`
+- [*] code requestor service
+- [ ] add requestor service
+- [ ] add output service
+- [ ] coverage check
+- [ ] db part 2
+    - [ ] cassandra
+- [ ] queue part 2
+    - [ ] kafka queue
 - [ ] single app cli that can start any number of services
     - [ ] single VM service cat?
 - [ ] resource requestor
@@ -135,10 +181,13 @@ need ms or ns.
 - [ ] publisher
 
 ## v0.0.2.0 - RequestMachineMatrix
-- [ ] store all vars (request spec, timing, etc...) in a dict, key'ed by uri, allowing
+- [~] store all vars (request spec, timing, etc...) in a dict, key'ed by uri, allowing
       multiple requests to be handled by one machine. First pass should be blocking.
-- [ ] next up make each get spawn and return a future, saved in
-
+      => not sure what this is. Each resource is represented by an object. If anything it
+         should be distributed and stateless. The object has direct O(1) access to fields,
+         defer.
+- [x] next up make each get spawn and return a future.
+      => services are already accessed via proxies, and by nature are services
 
 ## v0.0.3.0 - UniqueClass
 - [?] UniqueService class?
@@ -166,7 +215,16 @@ need ms or ns.
 ## v0.0.x.0 - Cleanup
 - [ ] Config file
 - [ ] Commandline params
-
+- [ ] stop passing around parent logger, just use lineage or some such
 
 ## Bucket
-- [ ] ...
+- [ ] services that die should have an option to store some kind of state, maybe through a interface method
+      `saveState()` so that upon re-animating it will resume from the previous? Maybe discourage this type
+      of state service.
+- [ ] service cop to detect bad behaving services
+    - [ ] may involve the service window timings be accessed via a service proxy rather than directly
+          embedded within the service as it is now, this way the timing state isn't lost when the service
+          is destroyed accidently
+- [ ] modify scheduler to accept timings for future or inteval like work, see if any open py libraries exist
+- [ ] create more friendly service supervisor for use with execution like services (may negate the need for below)
+- [ ] truely create a non event loop service (code only)

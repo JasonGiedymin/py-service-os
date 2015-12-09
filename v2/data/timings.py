@@ -41,6 +41,13 @@ class Resource:
         """
         When New resources are created a unique name is generated and
         should be saved along with the resource.
+        :param uri:
+        :param timings:
+        :param headers:
+        :param send_headers:
+        :param owner:
+        :param json: set to True if expecting JSON content, will allow downstream parsing.
+        :return:
         """
         self.uri = uri
         self.id = uuid4()  # unique id representing the resource
@@ -51,14 +58,15 @@ class Resource:
 
         # a string representing the guid of an
         # owner which is working on the resource
+        # TODO: perhaps remove this, as an analysis could be done in nanoseconds, in which case
+        #       could either collide or make slower this application.
         self.owner = owner  # I would expect to see the unique name of an application here (111223-analyzer)
 
         # this represents the queue that the resource is now in
         self.queue_topic = "NONE"
-
         self.json = json
-
         self.state = ResourceStates.Idle
+        # self.reload = False  # this needs more work
 
     def is_json(self):
         return self.json
