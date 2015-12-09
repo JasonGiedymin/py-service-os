@@ -69,7 +69,7 @@ def main():
     def stop():
         os.shutdown()
 
-    stop_event = gevent.spawn_later(5, stop)
+    stop_event = gevent.spawn_later(10, stop)
     gevent.joinall([os.start(), stop_event])
 
 main()

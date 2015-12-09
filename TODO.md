@@ -221,5 +221,10 @@ need ms or ns.
 - [ ] services that die should have an option to store some kind of state, maybe through a interface method
       `saveState()` so that upon re-animating it will resume from the previous? Maybe discourage this type
       of state service.
-- [ ] service cop
-- [ ] 
+- [ ] service cop to detect bad behaving services
+    - [ ] may involve the service window timings be accessed via a service proxy rather than directly
+          embedded within the service as it is now, this way the timing state isn't lost when the service
+          is destroyed accidently
+- [ ] modify scheduler to accept timings for future or inteval like work, see if any open py libraries exist
+- [ ] create more friendly service supervisor for use with execution like services (may negate the need for below)
+- [ ] truely create a non event loop service (code only)
