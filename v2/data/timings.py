@@ -43,10 +43,15 @@ class Resource:
         should be saved along with the resource.
         :param uri:
         :param timings:
-        :param headers:
-        :param send_headers:
+        :param headers: these are the resource headers that are maintained across
+                        requests and are changed upon receiving requests. The
+                        initial setting is set manually but then updated as
+                        requests are received.
+        :param send_headers: these are the headers that are required for any
+                             specific request such as API Keys.
         :param owner:
-        :param json: set to True if expecting JSON content, will allow downstream parsing.
+        :param json: set to True if expecting JSON content, will allow downstream
+                     parsing.
         :return:
         """
         self.uri = uri
@@ -160,18 +165,37 @@ class ResourceTimings:
 
         return now > self.interval_timestamp
 
+    def interval_remaining(self):
+        now = self.get_now()
+
+        if not self.has_interval_passed():
+            return self.interval_timestamp - now
+
+        # else
+        return 0
+
+    def reset_time_remaining(self):
+        now = self.get_now()
+
+        if not self.has_reset_window_past():
+            return self.time_to_reset - now
+
+        # else
+        return 0
+
     def update(self, response, header_keys):
         def get_value(key, key_type=str):
             return self.get_header_value(response.headers,
                                          key,
                                          key_type)
 
-        self.interval = get_value(header_keys.interval, int)  # milliseconds
+        self.interval = get_value(header_keys.interval, int) * 1000  # convert from seconds to milliseconds
         self.rate_limit = get_value(header_keys.rate_limit, int)
         self.rate_limit_remaining = get_value(header_keys.rate_limit_remaining, int)
         self.time_to_reset = get_value(header_keys.time_to_reset, int) * 1000  # seconds need to convert to milliseconds
         self.etag = get_value(header_keys.etag)
         self.update_timestamp()
+        self.update_interval_timestamp()
 
     @staticmethod
     def get_header_value(headers, header_key, key_type=str):

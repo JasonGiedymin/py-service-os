@@ -59,8 +59,8 @@ class Logger:
             if len(logger._logger.handlers) <= 0:
 
                 # logger._logger.setLevel(TRACE)
-                # logger.setLevel(logging.DEBUG)
-                logger.setLevel(logging.INFO)
+                logger.setLevel(logging.DEBUG)
+                # logger.setLevel(logging.INFO)
 
                 logger.propagate = False
                 console = logging.StreamHandler(sys.stdout)

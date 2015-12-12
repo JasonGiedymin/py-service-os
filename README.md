@@ -48,6 +48,7 @@ pip install -U enum34
 pip install -U scales
 pip install -U flask
 pip install -U pytest-flask
+pip install -U gipc # may require `xcode-select --install` to be run
 ```
 
 ## Tests

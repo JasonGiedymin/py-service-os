@@ -2,13 +2,13 @@
 import gevent
 
 # lib
-from v2.system.services import BaseService
+from v2.system.services import BaseService, ExecutionService
 from v2.system.os import Scheduler
 
 __author__ = 'jason'
 
 
-class CannedOS(BaseService):
+class CannedOS(ExecutionService):
     """
     OS -> Scheduler -> ServiceManager -> DirectoryService -> UserService
 

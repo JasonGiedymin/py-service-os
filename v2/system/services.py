@@ -77,6 +77,7 @@ class BaseService:
 
         self.log = Logger.get_logger(self.lineage)
         self.greenlet = None
+        self._service_state = None
         self.set_state(BaseStates.Idle)
 
         # directory service proxy
@@ -183,6 +184,18 @@ class BaseService:
 
     def get_directory_service_proxy(self):
         return self._directory_proxy
+
+
+class ExecutionService(BaseService):
+    """
+    An execution service is really a symantic object that holds references to
+    services. Itself should not run an event loop.
+    """
+    def should_loop(self):
+        return False
+
+    def event_loop(self):
+        gevent.idle()
 
 
 class QueuedService(BaseService):
