@@ -164,11 +164,25 @@ need ms or ns.
 - [x] Add zombie detection
 - [x] Add code to recover zombie services if `enable_service_recovery` set to `True`
 - [x] Add code to `BaseService` with a default event loop, will fix implementors of `BaseService` from having to implement the event loop when one isn't needed
-- [ ] replace as many event loops possible with new loop `self.should_loop():`
-- [*] code requestor service
-- [ ] add requestor service
-- [ ] add output service
-- [ ] coverage check
+- [x] replace as many event loops possible with new loop `self.should_loop():`
+- [x] code requestor service
+- [x] add requestor service
+- [x] add output service
+- [x] fix apparent `interval_timestamp` that is never updated => forgot to make call to update_interval_timestamp()
+- [x] delay queue, so that quick cycles are not created within analysis queue. I.e. if a resource is pulled,
+      analyzed, and then put back in the queue in the manner of milliseconds then that would cause unnecessary
+      cpu timing spent in the loop.
+      - [x] add frozen-250 queue for resources in the interval 
+      - [x] add frozen-500 queue for resources in the interval
+      - [x] add frozen-1000 queue for resources in the interval
+      - [x] code analyzer with new timing sorter
+      - [x] fix logs with response parser to actually log the resource id
+      - [x] services reading from the frozen queues
+      - [x] lots of tests directly with `timing_sorter.py`
+      - [x] tests with analyzer using `timing_sorter.py`
+      - [x] introduce test dealing with delta with regard to reset timing in the sorter
+      - [x] fix `RuntimeException: maximum recursion depth exceeded` => found QueueService to have bad method, was
+            calling self method.
 - [ ] db part 2
     - [ ] cassandra
 - [ ] queue part 2
@@ -178,7 +192,7 @@ need ms or ns.
 - [ ] resource requestor
     - [ ] do request
     - [ ] parse response
-- [ ] publisher
+- [x] publisher
 
 ## v0.0.2.0 - RequestMachineMatrix
 - [~] store all vars (request spec, timing, etc...) in a dict, key'ed by uri, allowing
@@ -218,7 +232,19 @@ need ms or ns.
 - [ ] stop passing around parent logger, just use lineage or some such
 
 ## Bucket
-- [ ] services that die should have an option to store some kind of state, maybe through a interface method
+- [ ] "OS Stop on failure"
+      Set a flag so that during tests or production the OS can log errors directly
+      or halt itself due to an error. This will also be helpful in tests.
+- [ ] "Algo based timing sorter" 
+      Each freezer service must implement a get_resource method, but each service uses the
+      timing_sorter which itself has direct knowledge of which queue to sort into. Modify the
+      sort() method to instead rely on a provided method on the service itself. It would most 
+      likely be of great use to also embed into the service the freezing time. This way a generic
+      algorithm can be coded with inputs being freezing time and put_resource() methods.
+- [ ] "First class response object"
+      convert tuple to an class object within the for publish service (response_parser.py)
+- [ ] "Service data check-in"
+       services that die should have an option to store some kind of state, maybe through a interface method
       `saveState()` so that upon re-animating it will resume from the previous? Maybe discourage this type
       of state service.
 - [ ] service cop to detect bad behaving services

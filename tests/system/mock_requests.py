@@ -29,6 +29,44 @@ def register_mock_testdata(adapter):
     return adapter
 
 
+def register_mock_github_quickinterval_events(adapter):
+    """
+    Generates a sequence of quick interval responses good for
+    testing the analyzer and freeze services.
+    :param adapter:
+    :return:
+    """
+
+    data_file = open('./tests/system/mock_data/get_event_body.json', 'r')
+    data = json.load(data_file)
+    common_request = {
+        'text': json.dumps(data),
+        'status_code': 200,
+        'headers': {
+            'X-RateLimit-Limit': GLOBAL_MOCK_REQUEST_RATELIMIT,
+            'X-RateLimit-Remaining': GLOBAL_MOCK_REQUEST_REMAINING,
+            'X-RateLimit-Reset': str(timeutils.seconds() + 60),
+            'X-Poll-Interval': GLOBAL_MOCK_REQUEST_INTERVAL,
+            'Cache-Control': 'private, max-age=60, s-maxage=60',
+            'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
+            'ETag': GLOBAL_MOCK_REQUEST_ETAG1
+
+        }
+    }
+
+    def times():
+        data = []
+
+        for n in range(100):
+            common_request['headers']['mock-sequence-id'] = "%d" % n
+            data.append(common_request)
+
+        return data
+
+    adapter.register_uri('GET', 'mock://github/events-quick-interval', times())
+    return adapter
+
+
 def register_mock_github_events(adapter):
     data_file = open('./tests/system/mock_data/get_event_body.json', 'r')
     data = json.load(data_file)
@@ -174,6 +212,7 @@ def register_mock_endpoints(adapter):
 
     register_mock_testdata(adapter)
     register_mock_github_events(adapter)
+    register_mock_github_quickinterval_events(adapter)
 
     return adapter
 

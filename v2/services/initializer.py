@@ -51,12 +51,12 @@ class InitializerService(BaseService):
         The event loop.
         Resource reloading is disabled at the moment.
         """
-        while True:
+        while self.should_loop():
             for res_uri, res in self.db.get_resources():
                 if res_uri not in self.registered:
                     self.queue.put_analyze(res)
                     self.registered[res_uri] = res
-                    self.log.info("registered new resource, id:[%s], uri:[%s], size: [%d]" % (res.id, res_uri, self.queue.analyzer_size()))
+                    self.log.info("registered new resource, id:[%s], uri:[%s], size: [%d]" % (res.id, res_uri, self.queue.analyze_size()))
                 # else:  # resource already exists
                     # if resource.reload:  # check if it needs reloading
                     #     self.registered.pop(resource.id)  # popping it will reload it next loop

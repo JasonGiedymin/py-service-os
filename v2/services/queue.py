@@ -11,6 +11,13 @@ __author__ = 'jason'
 class QueueService(BaseService, BaseQueue):
     """
     Queue service proxy.
+    WARNING: I've more than once accidently done a copy/paste and not realize that
+             was calling the method again, causing a stack trace with the dreaded
+             `RuntimeError: maximum recursion depth exceeded`. To catch further
+             instances of this see the TODO.
+    TODO: look for methods of self.put or self.get and flag on presence of them on this
+          file. This service should not have any such methods. See warning for more
+          info.
     """
 
     def __init__(self, name, parent_logger=None, enable_service_recovery=False):
@@ -18,6 +25,46 @@ class QueueService(BaseService, BaseQueue):
         self.queue = MemQueue()  # queue implementation
 
     # below methods are proxies to the queue interface
+    # -- Frozen 50 Queue --
+    def get_frozen_50(self):
+        return self.queue.get_frozen_50()
+
+    def put_frozen_50(self, item):
+        return self.queue.put_frozen_50(item)
+
+    def frozen_50_size(self):
+        return self.queue.frozen_50_size()
+
+    # -- Frozen 250 Queue --
+    def get_frozen_250(self):
+        return self.queue.get_frozen_250()
+
+    def put_frozen_250(self, item):
+        return self.queue.put_frozen_250(item)
+
+    def frozen_250_size(self):
+        return self.queue.frozen_250_size()
+
+    # -- Frozen 500 Queue --
+    def get_frozen_500(self):
+        return self.queue.get_frozen_500()
+
+    def put_frozen_500(self, item):
+        return self.queue.put_frozen_500(item)
+
+    def frozen_500_size(self):
+        return self.queue.frozen_500_size()
+
+    # -- Frozen 1000 Queue --
+    def get_frozen_1000(self):
+        return self.queue.get_frozen_1000()
+
+    def put_frozen_1000(self, item):
+        return self.queue.put_frozen_1000(item)
+
+    def frozen_1000_size(self):
+        return self.queue.frozen_1000_size()
+
     # -- Analyzer --
     def get_analyze(self):
         return self.queue.get_analyze()
@@ -25,8 +72,17 @@ class QueueService(BaseService, BaseQueue):
     def put_analyze(self, item):
         return self.queue.put_analyze(item)
 
-    def analyzer_size(self):
-        return self.queue.analyzer_size()
+    def analyze_size(self):
+        return self.queue.analyze_size()
+
+    def get_analyze_error(self):
+        return self.queue.get_analyze_error()
+
+    def put_analyze_error(self, item):
+        return self.queue.put_analyze_error(item)
+
+    def analyze_error_size(self):
+        return self.queue.analyze_error_size()
 
     # -- Requestor --
     def put_requests(self, item):

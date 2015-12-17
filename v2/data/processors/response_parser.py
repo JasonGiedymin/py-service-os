@@ -25,42 +25,46 @@ class ResponseParser(DataProcessor):
             else:
                 content = resp.content
 
-        def publish_error(content):
-            pass
+            return True
+
+        def publish_error():
+            return False
 
         def default():
             msg = "Found a response code which didn't expect, setting resource to error state."
             self.log.error(msg, status_code=status_code)
             resource.set_error_state()
+            return publish_error()
 
         def res200():
             msg = "200 response code received."
             self.log.debug(msg, status_code=status_code)
             ResponseParser.parse_headers(response, resource)
-            publish_results(response, resource)
+            return publish_results(response, resource)
 
         def res304():
             msg = "304 not modified received, waiting for next interval"
             self.log.debug(msg, status_code=status_code)
             ResponseParser.parse_headers(response, resource)
+            return True
 
         def res403():
             msg = "Client credentials are no longer valid or were not able to be verified."
             self.log.debug(msg, status_code=status_code)
             resource.set_error_state()
-            publish_error()
+            return publish_error()
 
         def res404():
             msg = "Response received noting resource does not exist, or does not exist any longer."
             self.log.error(msg, status_code=status_code)
             resource.set_error_state()
-            publish_error()
+            return publish_error()
 
         def res500():
             msg = "Response received noting resource does not exist, or does not exist any longer."
             self.log.debug(msg, status_code=status_code)
             resource.set_error_state()
-            publish_error()
+            return publish_error()
 
         handler = {
             200: res200,
@@ -72,4 +76,4 @@ class ResponseParser(DataProcessor):
 
         handle = handler.get(status_code, default)
 
-        handle()
+        return handle()

@@ -63,7 +63,7 @@ def test_limit_reached_reset_ready():
     resource = Resource("mock://test", timings, ResourceHeaders())
     ra = ResourceAnalyzer("test-resource-analyzer")
 
-    assert ra.can_request(resource) is True
+    assert ra.can_request(resource) == (True, None)
 
 
 def test_limit_reached_reset_infuture():
