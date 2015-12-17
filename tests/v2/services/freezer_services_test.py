@@ -13,6 +13,7 @@ from v2.services.response import ResponseParserService
 from v2.services.initializer import InitializerService
 from v2.data.timings import ResourceTimings
 from v2.data.timings import Resource
+from v2.data.simple_data import ServiceMetaData
 
 # Test libs
 from tests.v2.system import mock_requests
@@ -80,23 +81,23 @@ def test_freezer_services_for_max_recursion():
     os.bootup()
 
     # == support services ==
-    os.schedule_service(DBService, "database-service", True)
-    os.schedule_service(QueueService, "queue-service", True)
+    os.schedule_service(DBService, ServiceMetaData("database-service", recovery_enabled=True))
+    os.schedule_service(QueueService, ServiceMetaData("queue-service", recovery_enabled=True))
 
     # == mock Init - will wait for analyzer to run ==
-    os.schedule_service(MockInitializerService, "mock-initializer-service", True)
+    os.schedule_service(MockInitializerService, ServiceMetaData("mock-initializer-service", recovery_enabled=True))
 
     # == freezes - will wait until analyzer runs ==
-    os.schedule_service(Freezer50Service, "freezer-50", True)
-    os.schedule_service(Freezer250Service, "freezer-250", True)
-    os.schedule_service(Freezer500Service, "freezer-500", True)
-    os.schedule_service(Freezer1000Service, "freezer-1000", True)
+    os.schedule_service(Freezer50Service, ServiceMetaData("freezer-50", recovery_enabled=True))
+    os.schedule_service(Freezer250Service, ServiceMetaData("freezer-250", recovery_enabled=True))
+    os.schedule_service(Freezer500Service, ServiceMetaData("freezer-500", recovery_enabled=True))
+    os.schedule_service(Freezer1000Service, ServiceMetaData("freezer-1000", recovery_enabled=True))
 
     # == main services - in reverse order of execution so that
     #    analyzer runs last ==
-    os.schedule_service(MockResponseService, "mock-response-service")
-    os.schedule_service(MockRequestService, "mock-requestor", True)
-    os.schedule_service(AnalyzerService, "analyzer-service", True)
+    os.schedule_service(MockResponseService, ServiceMetaData("mock-response-service", recovery_enabled=True))
+    os.schedule_service(MockRequestService, ServiceMetaData("mock-requestor", recovery_enabled=True))
+    os.schedule_service(AnalyzerService, ServiceMetaData("analyzer-service", recovery_enabled=True))
 
     assert os.scheduler.get_services_count() == 10
 

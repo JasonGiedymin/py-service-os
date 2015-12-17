@@ -34,25 +34,6 @@ class BaseService:
     # format_str = '%(asctime)s\t%(levelname)s -- %(processName)s %(filename)s:%(lineno)s -- %(message)s'
     # console.setFormatter(logging.Formatter(format_str))
 
-    def event_loop(self):
-        """
-        Override this
-        """
-        # while True:
-        #     with self.latency.time():
-        #         self.latency_window.mark()
-        #         # do some work here
-        #         # sleep or idle
-        while self.should_loop():
-            gevent.idle()
-
-    def should_loop(self):
-        # return not self.ready() or not self.has_stopped()
-        # chose to signal on if the service has started rather than started or idle
-        # which would be a confusing state which a loop would be allowed execution.
-        # In an effort to narrow down to one state I choose `started`.
-        return self.has_started()
-
     def __init__(self, name="base-service", directory_proxy=None, parent_logger=None, enable_service_recovery=False):
         """
         uuid - a uuid4 value for the service
@@ -81,12 +62,31 @@ class BaseService:
         self.set_state(BaseStates.Idle)
 
         # directory service proxy
-        self._directory_proxy = directory_proxy
+        self.directory_proxy = directory_proxy
 
         # service recovery option
         self.enable_service_recovery = enable_service_recovery
 
         self.log.debug("Initialized.")
+
+    def event_loop(self):
+        """
+        Override this
+        """
+        # while True:
+        #     with self.latency.time():
+        #         self.latency_window.mark()
+        #         # do some work here
+        #         # sleep or idle
+        while self.should_loop():
+            gevent.idle()
+
+    def should_loop(self):
+        # return not self.ready() or not self.has_stopped()
+        # chose to signal on if the service has started rather than started or idle
+        # which would be a confusing state which a loop would be allowed execution.
+        # In an effort to narrow down to one state I choose `started`.
+        return self.has_started()
 
     def register_child_stat(self, name):
         scales.initChild(self, name)
@@ -106,7 +106,8 @@ class BaseService:
         self.log.info("Starting...")
 
         if self.get_state() is not BaseStates.Idle:  # or not self.enable_service_recovery:
-            self.log.error("could not start service as it is not in an idle state, current state: [%s]" % self.get_state())
+            self.log.error("could not start service as it is not in an idle state, current state: [%s]" %
+                           self.get_state(), state=self.get_state())
             raise ServiceNotIdleException()
 
         self.greenlet = gevent.spawn(self.event_loop)
@@ -158,6 +159,15 @@ class BaseService:
         """
         return not self.has_state() or not self.greenlet.started
 
+    def is_truly_dead(self):
+        """
+        Not a zombie. Stopped is not dead. Zombie is not dead (It's alive stupid!).
+        This method checks if the greenlet was not successful and has logged an
+        exception.
+        :return:
+        """
+        return not self.greenlet.successful() and self.greenlet.exception is not None
+
     def idle(self):
         """
         Resets a service which you expect to restart.
@@ -180,13 +190,13 @@ class BaseService:
         self._service_state = state
 
     def set_directory_service_proxy(self, directory_proxy):
-        self._directory_proxy = directory_proxy
+        self.directory_proxy = directory_proxy
 
     def get_directory_service_proxy(self):
-        return self._directory_proxy
+        return self.directory_proxy
 
 
-class ExecutionService(BaseService):
+class ExecutorService(BaseService):
     """
     An execution service is really a symantic object that holds references to
     services. Itself should not run an event loop.
@@ -254,7 +264,10 @@ class DirectoryService(BaseService):
         return len(self._service_manager_directory)
 
     def get_service(self, name):
-        return self._service_manager_directory.get(name)
+        return self._service_manager_directory.get(name).service
+
+    def get_service_meta(self, name):
+        return self._service_manager_directory.get(name).service_meta
 
     def get_outputservice(self):
         return self._service_manager_directory.get("output-service")

@@ -13,3 +13,10 @@ class ServiceNotIdleException(Exception):
 
     def __init__(self):
         Exception.__init__(self, self.msg)
+
+
+class ServiceMetaDataNotFound(Exception):
+    msg = "A service's metadata could not be found! This is a grave error and this OS may shutdown!"
+
+    def __init__(self):
+        Exception.__init__(self, self.msg)

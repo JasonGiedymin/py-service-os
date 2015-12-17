@@ -172,6 +172,7 @@ need ms or ns.
 - [x] delay queue, so that quick cycles are not created within analysis queue. I.e. if a resource is pulled,
       analyzed, and then put back in the queue in the manner of milliseconds then that would cause unnecessary
       cpu timing spent in the loop.
+      - [x] add frozen-50 queue for resources in the interval
       - [x] add frozen-250 queue for resources in the interval 
       - [x] add frozen-500 queue for resources in the interval
       - [x] add frozen-1000 queue for resources in the interval
@@ -183,10 +184,22 @@ need ms or ns.
       - [x] introduce test dealing with delta with regard to reset timing in the sorter
       - [x] fix `RuntimeException: maximum recursion depth exceeded` => found QueueService to have bad method, was
             calling self method.
-- [ ] db part 2
-    - [ ] cassandra
+- [ ] service fail dectection, right now errors and exceptions get swallowed up
+- [*] scheduler enhancements:
+    - [x] allow service metadata to be stored with scheduler
+    - [x] add new method manually specifying service metadata
+    - [x] fix all references to add service with new service metadata
+    - [x] create service_directory entry that combines service and service metadata
+    - [*] allow service start delay within the scheduler
+    - [*] keep track of scheduler restart counts
+    - [ ] keep track of services that have exceptions (truely dead)
+    - [ ] consider moving enable_recovery into the service_manager from the service itself
+- [ ] integration test framework (bash script?? makefile??)
 - [ ] queue part 2
     - [ ] kafka queue
+    - [ ] integration test
+- [ ] db part 2
+    - [ ] cassandra
 - [ ] single app cli that can start any number of services
     - [ ] single VM service cat?
 - [ ] resource requestor

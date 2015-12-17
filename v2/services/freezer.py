@@ -75,6 +75,7 @@ class Freezer250Service(FreezerService):
         self.sleep_time = .25
 
     def get_resource(self):
+        # raise Exception
         return self.queue.get_frozen_250()
 
 

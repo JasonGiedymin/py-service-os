@@ -29,11 +29,13 @@ mkvirtualenv --python $(which pypy) pypy-git-pub
 
 ```
 
+Upgrade Pip to the lastest:
 ```shell
 pip install --upgrade pip
 ```
 
 Below is the manual list which should match the requirements.txt file.
+Note that the below are ABSOLUTELY REQUIRED.
 ```shell
 pip install -U --pre github3.py
 pip install -U requests
@@ -48,14 +50,29 @@ pip install -U enum34
 pip install -U scales
 pip install -U flask
 pip install -U pytest-flask
-pip install -U gipc # may require `xcode-select --install` to be run
+# pip install -U gipc # may require `xcode-select --install` to be run
+pip install -U tox
+pip install -U structlog
 ```
 
 ## Tests
-Uses py.test.
+
+### Unit Tests
+Uses py.test:
 ```shell
 # make sure your in the root of the project
 ./py.test
+```
+
+### Integration Tests
+Uses tox. See:
+  1. `tox.ini`
+  1. `requirements.ini`
+  1. `setup.py`
+
+Usage:
+```shell
+tox
 ```
 
 ## Additional Info
@@ -63,10 +80,17 @@ Most APIs can be and should be driven by tokens.
 This app should use a personal token which is generated manually by the UI.
 It could be done via automation but at the time does not.
 
-## Limits
+## Development/Usage
 
-Respect the following limits:
+### Generate Requirements
+```shell
+pip freeze > requirements.txt
+```
 
-1. Most github APIs have a rate-limit of 5000 req/hr. Otherwise it will follow the rate limit header.
-1. `X-RateLimit-Limit` is the limit.
-1. `X-RateLimit-Remaining` is the remaining limit.
+### Limits
+
+Respect the following http limits from providers:
+
+1. Github - Most github APIs have a rate-limit of 5000 req/hr. Otherwise it will follow the rate limit header.
+    1. `X-RateLimit-Limit` is the limit.
+    1. `X-RateLimit-Remaining` is the remaining limit.

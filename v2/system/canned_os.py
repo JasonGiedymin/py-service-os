@@ -2,13 +2,14 @@
 import gevent
 
 # lib
-from v2.system.services import BaseService, ExecutionService
+from v2.system.services import BaseService, ExecutorService
 from v2.system.os import Scheduler
+from v2.data.simple_data import ServiceMetaData
 
 __author__ = 'jason'
 
 
-class CannedOS(ExecutionService):
+class CannedOS(ExecutorService):
     """
     OS -> Scheduler -> ServiceManager -> DirectoryService -> UserService
 
@@ -54,16 +55,15 @@ class CannedOS(ExecutionService):
         self.scheduler.stop()
         self.stop()
 
-    def schedule_service(self, service_class, name, enable_service_recovery=False):
+    def schedule_service(self, service_class, service_meta):
         """
         Take a service and let the instaniation begin here.
-        :param service_class:
-        :param name:
-        :param enable_service_recovery:
+        :param service_class: python class to use
+        :param service_meta: metadata about the service
         :return:
         """
-        service = service_class(name, parent_logger=self.log, enable_service_recovery=enable_service_recovery)
-        self.scheduler.add_service(service)
+        service = service_class(service_meta.alias, parent_logger=self.log)
+        self.scheduler.add_service_with_meta(service, service_meta)
 
     def schedule_provided_service(self, service):
         """
