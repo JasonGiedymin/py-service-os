@@ -34,7 +34,7 @@ class AnalyzerService(BaseService):
         if can_request:
             size = self.queue.put_requests(resource)
             self.log.debug("resource put on request queue, size: [%d]" % size)
-        else: # can't request because something is wrong or not ready
+        else:  # can't request because something is wrong or not ready
             # Optimization: check the state and if the state is interval time related
             # put the resource on the appropriate frozen queue. This will prevent
             # a high resolution event loop from always evaluating resources that are

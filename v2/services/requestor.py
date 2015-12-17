@@ -36,12 +36,20 @@ class RequestorService(BaseService):
     def __init__(self, name, parent_logger=None, enable_service_recovery=False):
         BaseService.__init__(self, name, parent_logger=parent_logger, enable_service_recovery=enable_service_recovery)
         self.queue = None
+        self.session = None
+
+    def resolve_session(self):
+        return requests.Session()
+
+    def set_session(self):
+        self.session = self.resolve_session()
 
     def set_queue(self, queue):
         self.queue = queue
 
     def register(self):
-        self.queue = self.get_directory_service_proxy().get_service("queue-service")
+        self.set_queue(self.get_directory_service_proxy().get_service("queue-service"))
+        self.set_session()
 
     def event_loop(self):
         """
@@ -53,13 +61,14 @@ class RequestorService(BaseService):
             if resource is not None:  # if an item exists
                 self.log.debug("found resource to request")
 
-                session = requests.Session()
-                session.headers = resource.send_headers
-                session.headers.update({
+                # update headers
+                self.session.headers = resource.send_headers
+                self.session.headers.update({
                     "If-None-Match": '%s' % resource.timings.etag
                 })
 
-                resp = session.get("https://api.github.com/events")
+                # resp = self.session.get("https://api.github.com/events")
+                resp = self.session.get(resource.uri)
                 self.log.info("request complete", status_code=resp.status_code, resource_id=str(resource.id))
                 # self.log.info(resp.headers)
                 # self.log.info(resp.content)

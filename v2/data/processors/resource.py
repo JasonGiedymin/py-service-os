@@ -29,7 +29,10 @@ class ResourceAnalyzer(DataProcessor):
         if resource.has_error():
             self.log.error("resource is in state of error while trying to see if it can be requested.",
                            resource_id=str(resource.id),
-                           resource_uri=resource.uri)
+                           resource_uri=resource.uri,
+                           interval_remaining=resource.timings.interval_remaining(),
+                           limit_remaining=resource.timings.rate_limit_remaining,
+                           reset_remaining=resource.timings.reset_time_remaining())
             return False, ResourceStates.Error
 
         # if someone owns the resource, it cannot be called. Think of it as a lock with semantics.
@@ -37,14 +40,20 @@ class ResourceAnalyzer(DataProcessor):
             self.log.error("resource already has an owner registered to it.",
                            resource_owner=resource.owner,
                            resource_id=str(resource.id),
-                           resource_uri=resource.uri)
+                           resource_uri=resource.uri,
+                           interval_remaining=resource.timings.interval_remaining(),
+                           limit_remaining=resource.timings.rate_limit_remaining,
+                           reset_remaining=resource.timings.reset_time_remaining())
             return False, ResourceStates.HasOwner
 
         # == Business Checks == now business logic can be accessed
         if self.is_edge_case(resource):
             self.log.error("resource was found to be in an edge case error state.",
                            resource_id=str(resource.id),
-                           resource_uri=resource.uri)
+                           resource_uri=resource.uri,
+                           interval_remaining=resource.timings.interval_remaining(),
+                           limit_remaining=resource.timings.rate_limit_remaining,
+                           reset_remaining=resource.timings.reset_time_remaining())
             return False, ResourceStates.EdgeError
 
         # Kept here for ease of reading, but if performance is an issue, make instance or static methods
@@ -52,13 +61,18 @@ class ResourceAnalyzer(DataProcessor):
             if resource.timings.has_reset_window_past():
                 self.log.debug("resource limit was reached, but can now be reset",
                                resource_id=str(resource.id),
-                               resource_uri=resource.uri)
+                               resource_uri=resource.uri,
+                               interval_remaining=resource.timings.interval_remaining(),
+                               limit_remaining=resource.timings.rate_limit_remaining,
+                               reset_remaining=resource.timings.reset_time_remaining())
                 return True, None
             else:
                 self.log.debug("resource limit was reached, waiting for reset.",
-                               limit=resource.timings.rate_limit_remaining,
                                resource_id=str(resource.id),
-                               resource_uri=resource.uri)
+                               resource_uri=resource.uri,
+                               interval_remaining=resource.timings.interval_remaining(),
+                               limit_remaining=resource.timings.rate_limit_remaining,
+                               reset_remaining=resource.timings.reset_time_remaining())
                 return False, ResourceStates.WaitingForReset
 
         def check_timings(next_fx):
@@ -67,9 +81,11 @@ class ResourceAnalyzer(DataProcessor):
             else:
                 msg = "resource interval passed, limit not yet exceeded, ready to be requested."
                 self.log.debug(msg,
-                               limit=resource.timings.rate_limit_remaining,
                                resource_id=str(resource.id),
-                               resource_uri=resource.uri)
+                               resource_uri=resource.uri,
+                               interval_remaining=resource.timings.interval_remaining(),
+                               limit_remaining=resource.timings.rate_limit_remaining,
+                               reset_remaining=resource.timings.reset_time_remaining())
                 return True, None
 
         def check_interval(next_fx):
@@ -78,7 +94,10 @@ class ResourceAnalyzer(DataProcessor):
             else:
                 self.log.debug("resource waiting for interval.",
                                resource_id=str(resource.id),
-                               resource_uri=resource.uri)
+                               resource_uri=resource.uri,
+                               interval_remaining=resource.timings.interval_remaining(),
+                               limit_remaining=resource.timings.rate_limit_remaining,
+                               reset_remaining=resource.timings.reset_time_remaining())
                 return False, ResourceStates.WaitingForInterval
 
         def then_check_timings(next_fx):

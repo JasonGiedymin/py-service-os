@@ -11,6 +11,13 @@ __author__ = 'jason'
 class QueueService(BaseService, BaseQueue):
     """
     Queue service proxy.
+    WARNING: I've more than once accidently done a copy/paste and not realize that
+             was calling the method again, causing a stack trace with the dreaded
+             `RuntimeError: maximum recursion depth exceeded`. To catch further
+             instances of this see the TODO.
+    TODO: look for methods of self.put or self.get and flag on presence of them on this
+          file. This service should not have any such methods. See warning for more
+          info.
     """
 
     def __init__(self, name, parent_logger=None, enable_service_recovery=False):
@@ -33,7 +40,7 @@ class QueueService(BaseService, BaseQueue):
         return self.queue.get_frozen_250()
 
     def put_frozen_250(self, item):
-        return self.put_frozen_250(item)
+        return self.queue.put_frozen_250(item)
 
     def frozen_250_size(self):
         return self.queue.frozen_250_size()
