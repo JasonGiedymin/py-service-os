@@ -190,10 +190,16 @@ need ms or ns.
     - [x] add new method manually specifying service metadata
     - [x] fix all references to add service with new service metadata
     - [x] create service_directory entry that combines service and service metadata
-    - [*] allow service start delay within the scheduler
-    - [*] keep track of scheduler restart counts
+    - [x] allow service start delay within the scheduler
+    - [x] keep track of scheduler restart counts
+    - [x] Allow Scheduler.start and Scheduler.restart of service
+        - [x] enhance scheduler to notice when a stop or start of a service didn't work
+        - [x] replace all `service_directory[alias]` calls with get_service()
+        - [x] renamed retries to starts, which makes more sense
     - [ ] keep track of services that have exceptions (truely dead)
     - [ ] consider moving enable_recovery into the service_manager from the service itself
+    - [ ] record service failures with meta data
+    - [ ] add os flag to halt on failures
 - [ ] integration test framework (bash script?? makefile??)
 - [ ] queue part 2
     - [ ] kafka queue

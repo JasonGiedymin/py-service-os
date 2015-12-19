@@ -99,9 +99,23 @@ def test_freezer_services_for_max_recursion():
     os.schedule_service(MockRequestService, ServiceMetaData("mock-requestor", recovery_enabled=True))
     os.schedule_service(AnalyzerService, ServiceMetaData("analyzer-service", recovery_enabled=True))
 
+    # Manually restart a service to register a retry count of +1
+    os.scheduler.restart_service("database-service")
+
     assert os.scheduler.get_services_count() == 10
+    assert os.scheduler.get_service_manager().get_service_meta("database-service").starts == 1
+
+    # now assert other services have retries set to 0
+    assert os.scheduler.get_service_manager().get_service_meta("analyzer-service").starts == 0
+    assert os.scheduler.get_service_manager().get_service_meta("mock-requestor").starts == 0
+    assert os.scheduler.get_service_manager().get_service_meta("mock-initializer-service").starts == 0
 
     def stop_os():
+        # by this time services have started and have registered retries == 1
+        assert os.scheduler.get_service_manager().get_service_meta("analyzer-service").starts == 1
+        assert os.scheduler.get_service_manager().get_service_meta("mock-requestor").starts == 1
+        assert os.scheduler.get_service_manager().get_service_meta("mock-initializer-service").starts == 1
+
         os.shutdown()
 
     def stop():

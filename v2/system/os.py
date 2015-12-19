@@ -31,6 +31,60 @@ class ServiceManager(BaseService):
         # designated by the BaseService parent class.
         self.set_directory_service_proxy(self.directory_service_proxy)
 
+    def start_service(self, alias):
+        entry = self.get_service_entry(alias)
+
+        if entry is None:
+            self.log.error("Could not find an entry for service named: [%s]" % alias)
+            return 0
+
+        def startable(service_entry):
+            return service_entry.service.ready() \
+                   and not service_entry.service.has_started() \
+                   # and not service.is_truly_dead()
+
+        def recoverable(service_entry):
+            return service_entry.service.is_zombie() \
+                   and service_entry.service_meta.recovery_enabled \
+                   # and not service.is_truly_dead()
+
+        def start(service_entry):
+            """
+            Start a service based on a service entry from the directory.
+            Will always apply the service delay if it is available.
+            :param service_entry:
+            :return:
+            """
+            # delay service startup if available
+            delay = service_entry.service_meta.delay
+            if delay > 0:
+                gevent.sleep(delay)
+
+            pid = service_entry.service.start()
+            service_entry.service_meta.starts += 1
+
+            if pid is not None:
+                return 1
+            else:
+                return 0
+
+        if entry.service_meta is None:
+            self.log.fatal("Could not find service metadata for service: [%s]" % (
+                entry.alias
+            ), id=entry.service.unique_name, lineage=entry.service.lineage)
+            raise ServiceMetaDataNotFound
+
+        if startable(entry):
+            self.log.info("starting service %s" % entry.service_meta.alias)
+            return start(entry)
+        elif recoverable(entry):
+            # if a service is able to be recovered we must put it in the idle state
+            entry.service.idle()
+            self.log.info("recovering and restarting possible zombied service: [%s]" % entry.service_meta.alias)
+            return start(entry)
+        else:  # if already started, and not a zombie do nothing.
+            return 0
+
     def _start_services(self):
         """
         Starts all designated services from the internal directory.
@@ -54,38 +108,8 @@ class ServiceManager(BaseService):
         """
         started_services = 0
 
-        def startable(service_entry):
-            return service_entry.service.ready() \
-                   and not service_entry.service.has_started() \
-                   # and not service.is_truly_dead()
-
-        def recoverable(service_entry):
-            return service_entry.service.is_zombie() \
-                   and service_entry.service_meta.recovery_enabled \
-                   # and not service.is_truly_dead()
-
-        def start_service(incoming_service):
-                pid = incoming_service.start()
-                if pid is not None:
-                    return 1
-                else:
-                    return 0
-
-        for service_name, entry in self.service_directory.iteritems():
-            if entry.service_meta is None:
-                self.log.fatal("Could not find service metadata for service: [%s]" % (
-                    service_name
-                ), id=entry.service.unique_name, lineage=entry.service.lineage)
-                raise ServiceMetaDataNotFound
-
-            if startable(entry):
-                self.log.info("starting service %s" % service_name)
-                started_services += start_service(entry.service)
-            elif recoverable(entry):
-                # if a service is able to be recovered we must put it in the idle state
-                entry.service.idle()
-                self.log.info("recovering and restarting possible zombied service: [%s]" % service_name)
-                started_services += start_service(entry.service)
+        for alias, entry in self.service_directory.iteritems():
+            started_services += self.start_service(alias)
 
         if started_services > 0:
             self.log.debug("started [%d] services in one event loop" % started_services)
@@ -120,28 +144,63 @@ class ServiceManager(BaseService):
         self.service_directory[service_meta.alias] = entry  # record the service, aka the pid
         return True
 
-    def stop_service(self, alias):
+    def stop_service_pid(self, service, halt=False):
+        """
+        This stops a specific service. A service may be halted if flagged. It is however expected that
+        the service will be immediately restarted shortly! Else it will get auto restarted! Usually
+        this method allows fine grained actions to occur within the scope of a single event loop.
+        Again, otherwise services may be recovered in the next loop.
+
+        :param service: the actual service.
+        :param halt: True if the service should be halted, False otherwise. A halted service is one which retains
+                     an entry within the directory service. Usually meant for a service which will restart very
+                     soon.
+        :return: True if stopped, False otherwise.
+        """
+
+        def stop(incoming_service):
+            self.log.info("stopping service [%s]..." % incoming_service.alias)
+
+            if not incoming_service.ready():
+                incoming_service.stop()
+                self.log.info("service [%s] stopped." % incoming_service.alias)
+            else:
+                self.log.info("service [%s] already stopped." % incoming_service.alias)
+
+            if not halt:
+                self.service_directory.pop(incoming_service.alias)
+
+            return True
+
+        return stop(service)
+
+    def stop_service(self, alias, halt=False):
         """
         :param alias:
-        :return:
-        :param greenlet:
+        :param halt: True if the service should be halted, False otherwise. A halted service is one which retains
+                     an entry within the directory service. Usually meant for a service which will restart very
+                     soon.
         :return:
         """
 
         if alias in self.service_directory:
-            self.log.info("stopping service [%s]..." % alias)
             service = self.directory_service_proxy.get_service(alias)
+            return self.stop_service_pid(service, halt=halt)
 
-            if not service.ready():
-                service.stop()
-                self.log.info("service [%s] stopped." % alias)
-            else:
-                self.log.info("service [%s] already stopped." % alias)
-
-            self.service_directory.pop(alias)
-            return True
-
+        self.log.error("Could not find service named [%s] to stop." % alias)
         return False
+
+    def restart_service(self, alias):
+        self.log.info("Attempting restart of service: [%s]" % alias, service_alias=alias)
+        if self.stop_service(alias, halt=True):  # service was able to be stopped
+            if self.start_service(alias) > 0:  # service was able to be started
+                self.log.info("Service [%s] restarted successfully" % alias, service_alias=alias)
+                return True
+            else:  # service was not able to be started for whatever reason
+                self.log.error("Service [%s] could not be restarted" % alias, service_alias=alias)
+                return False
+        else:  # service could not be stopped for whatever reason
+            self.log.error("Service [%s] restart failed" % alias, service_alias=alias)
 
     def stop_services(self):
         for pid_key, pid in self.service_directory.items():
@@ -157,9 +216,14 @@ class ServiceManager(BaseService):
     def get_services(self):
         return self.service_directory.items()
 
-    def get_service(self, service_id):
-        return self.get_directory_service_proxy().get_service(service_id)
+    def get_service(self, alias):
+        return self.get_directory_service_proxy().get_service(alias)
 
+    def get_service_meta(self, alias):
+        return self.get_directory_service_proxy().get_service_meta(alias)
+
+    def get_service_entry(self, alias):
+        return self.get_directory_service_proxy().get_service_entry(alias)
 
 class Scheduler(BaseService):
     """
@@ -217,13 +281,24 @@ class Scheduler(BaseService):
         """
         return self.service_manager.add_service(service, service_meta)
 
-    def stop_service(self, name):
+    def stop_service(self, alias):
         """
         Calls service manager.
-        :param name:
+        :param alias:
         :return:
         """
-        return self.service_manager.stop_service(name)
+        return self.service_manager.stop_service(alias)
+
+    def start_service(self, alias):
+        """
+        Calls service manager.
+        :param alias:
+        :return:
+        """
+        return self.service_manager.start_service(alias)
+
+    def restart_service(self, alias):
+        return self.service_manager.restart_service(alias)
 
     def get_services(self):
         return self.get_service_manager().get_services()

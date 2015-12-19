@@ -23,7 +23,7 @@ class ServiceMetaData:
         self.recovery_enabled = recovery_enabled  # if the service is allowed to recover
 
         # runtime info
-        self.retries = 0
+        self.starts = 0
         self.exception = None
         self.failed = False
 

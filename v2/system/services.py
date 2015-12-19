@@ -269,6 +269,9 @@ class DirectoryService(BaseService):
     def get_service_meta(self, name):
         return self._service_manager_directory.get(name).service_meta
 
+    def get_service_entry(self, name):
+        return self._service_manager_directory.get(name)
+
     def get_outputservice(self):
         return self._service_manager_directory.get("output-service")
 

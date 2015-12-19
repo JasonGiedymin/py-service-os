@@ -4,7 +4,14 @@
 
 ### Starting
 Services are started by the `ServiceManager`. A service manager is not interacted with direclty but through a 
-class named `Scheduler`. 
+class named `Scheduler`.
+
+Services are naturally efficient. Services when controlled by the service manager are killed automatically
+when stopped. There is no means of stopping a service and expecting it to hang around in some buffer.
+
+    Note: there does exist a halt flag on the stop_service_pid() method but this will only halt the
+          service for one event loop. Long enough to gather data or handle it before it is picked
+          up and flagged to be recovered.
 
 ### Restarts
 If a service is killed, the service manager will automatically restart it if the scheduler is setup for 
@@ -17,6 +24,17 @@ store state and if it should recover from a kill.
     Note: if service recovery is enabled, you may find that if a service was not properly shutdown
     and if it depends on other services which are shutdown, it may come back online trying to
     connect to those 'dead' services.
+
+Services and their meta data are stored as a ServiceDirectoryEntry. The Meta data object within that
+entry stores various information about services. Some of these fields are:
+
+  1. alias: name of the service
+  1. delay: how long to delay the start of the service
+  1. retry_enabled:  how many times to retry
+  1. recovery_enabled : if the service is allowed to recover
+  1. starts: how many times the service was started
+  1. exception: an exception (the last) which is part of the service if it failed
+  1. failed: whether a service is marked as a failed service
 
 ### Creating
 
