@@ -8,12 +8,14 @@ from v2.services.freezer import Freezer50Service, Freezer250Service, Freezer500S
 from v2.services.queue import QueueService
 from v2.services.db import DBService
 from v2.services.analyzer import AnalyzerService
+from v2.services.error_handler import ErrorHandler, ErrorHandlerFactory
 from v2.services.requestor import RequestorService
 from v2.services.response import ResponseParserService
 from v2.services.initializer import InitializerService
 from v2.data.timings import ResourceTimings
 from v2.data.timings import Resource
 from v2.data.simple_data import ServiceMetaData
+from v2.system.exceptions import ServiceException
 
 # Test libs
 from tests.v2.system import mock_requests
@@ -52,26 +54,20 @@ class MockResponseService(ResponseParserService):
     """
     def event_loop(self):
         while self.should_loop():
-            resource, response = self.queue.get_publish()  # pop from queue
-
-            # try:
-            if resource is not None and response is not None:  # if an item exists
-                parse_success = self.response_parser.parse(response, resource)
-                if parse_success:
-                    self.log.debug("found resource, putting back on analyze queue (mock works)...")
-                    self.queue.put_analyze(resource)
-                else:
-                    raise Exception("Error in MockResponseService - looks like bad parsing?")
-            else:  # serious error if we got here
-                raise Exception("Error in MockResponseService - looks like status was bad?")
-            # except Exception as ex:
-            #     print "Test error encountered - %s" % ex
-
-            gevent.sleep(2)
-            gevent.idle()
+            self.log.info("TEST! - about to raise a manual test error...")
+            raise ServiceException("manual error - error 123")  # <------------ raise an exception there!
 
 
-def test_freezer_services_for_max_recursion():
+class MockErrorHandler(ErrorHandler):
+    def __init__(self):
+        ErrorHandler.__init__(self)
+
+    def next(self, service_meta):
+        self.log.info("TEST! - %s" % service_meta.exceptions)
+        return service_meta
+
+
+def test_services_for_exceptions():
     """
     This test simulates the RuntimeError "maximum recursion depth exceeded".
     Ensure that this test passes without seeing this error.
@@ -93,24 +89,18 @@ def test_freezer_services_for_max_recursion():
     os.schedule_service(Freezer500Service, ServiceMetaData("freezer-500", recovery_enabled=True))
     os.schedule_service(Freezer1000Service, ServiceMetaData("freezer-1000", recovery_enabled=True))
 
+    # == error handlers for MockResponseService ==
+    error_handlers = [MockErrorHandler]
+
     # == main services - in reverse order of execution so that
     #    analyzer runs last ==
-    os.schedule_service(MockResponseService, ServiceMetaData("mock-response-service", recovery_enabled=True))
+    os.schedule_service(MockResponseService,
+                        ServiceMetaData("mock-response-service", recovery_enabled=True),
+                        error_handlers=error_handlers)
     os.schedule_service(MockRequestService, ServiceMetaData("mock-requestor", recovery_enabled=True))
     os.schedule_service(AnalyzerService, ServiceMetaData("analyzer-service", recovery_enabled=True))
 
     # Manually restart a service to register a retry count of +1
-    # Of note here is that up until this point the database-service has not yet
-    # been started. It will register as such in the logs and then proceed to start.
-    # A log entry will be created saying the service was able to be restarted
-    # successfully. It's started count will be 1, and when the service manager
-    # loops the services it will notice that this service was already started,
-    # skipping it.
-    # Other systems would have errored on the stop but I believe it
-    # is the end state that is of importance. I would care not that the service
-    # wasn't running to be stopped as what I do care about is that it was
-    # restarted, even if that means it was not running in the first place.
-    # I issue restart because I want the service to be started.
     os.scheduler.restart_service("database-service")
 
     assert os.scheduler.get_services_count() == 10
@@ -126,7 +116,6 @@ def test_freezer_services_for_max_recursion():
         assert os.scheduler.get_service_manager().get_service_meta("analyzer-service").starts == 1
         assert os.scheduler.get_service_manager().get_service_meta("mock-requestor").starts == 1
         assert os.scheduler.get_service_manager().get_service_meta("mock-initializer-service").starts == 1
-        assert os.scheduler.get_service_manager().get_service_meta("database-service").starts == 1
 
         os.shutdown()
 

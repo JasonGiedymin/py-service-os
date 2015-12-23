@@ -197,6 +197,42 @@ need ms or ns.
         - [x] replace all `service_directory[alias]` calls with get_service()
         - [x] renamed retries to starts, which makes more sense
     - [ ] keep track of services that have exceptions (truely dead)
+        - [x] "Rename _start_services to monitor_services"
+        - [x] fix bug that when exceptions occur the OS service state is set to stop, as I found a log
+              entry that said "... was found already stopped." => made all executioner services run a
+              single pass event loop by calling upon the parent's BaseService.start() method during the
+              CannedOS.bootup() routine.
+        - [x] log services that have exceptions => exceptions are logged in service_meta.exceptions[]
+        - [*] service is truely dead and upon starting reaches retry limit, code `handle_service_exception()`
+            - [x] make universal error_handler, where OS can attach handlers to services as they are added,
+                  having an issue where I made a class but wanted a mixin, figure it out, see canned_os
+                  where I would mix it in, and the `error_handler_test.py`
+            - [x] add handle_service_exception middleware (array of classes with handle() method) that will 
+                  process the exception.
+            - [x] allow set_logger for error handlers, so that service_manager can attach parent logger
+                - [x] add an error_handler factory so we can avoid using protected attributes
+            - [?] allow service_manager to handle exceptions as well? => why exactly? Ideally this
+                  code needs to be highly tested. The service manager doesn't do much. Defer until
+                  more evidence that this is needed.
+            - [x] fix starting services with delay where it will not log started state directly after 
+            - [*] fix to not allow infinite restarts, unless a delay is enacted.
+                - [x] `os.py` uses a delay, and now so does the base_service. Where should a delay be
+                      put? Construct a test to see how async this woks.
+                - [x] fix start delay, it does not actually work
+                    - [x] add new state "Starting", and make service_manager know about it
+                - [ ] add functionality to make service_manager know that a service didn't start properly
+                      according to delay, maybe set a timeout? Service start timeout = delay + some base value?
+                - [ ] apply algorithm to service starts which applies the starts count, the algorithm
+                      should have fast restarts up until the 4th or 5th restart where a noticible
+                      time delay should occur
+            - [ ] add logrithmic delay function to handle sequences of quick restarts
+        - [x] fix bug where error handler does not report what error handler class it is reporting an
+              error from
+        - [ ] fix service proxy duplication by removing `directory_service_proxy`, and instead use
+              use `directory_proxy`
+        - [ ] To enable OS stop on error, create ExitOnError test middleware
+        - [ ] create a test that will test for truely dead services that have exceptions
+              occur within them.
     - [ ] consider moving enable_recovery into the service_manager from the service itself
     - [ ] record service failures with meta data
     - [ ] add os flag to halt on failures
@@ -251,10 +287,15 @@ need ms or ns.
 - [ ] stop passing around parent logger, just use lineage or some such
 
 ## Bucket
+- [x] "Rename _start_services to monitor_services"
+      Pull out the anon methods to the either the service entry object or to the service obj 
+      because they need to be tested and the entire monitor service method needs to be 
+      rewritten slightly Add to that monitor_services method 'errored' that will exit 
+      fast or flag a service as bad.
 - [ ] "OS Stop on failure"
       Set a flag so that during tests or production the OS can log errors directly
       or halt itself due to an error. This will also be helpful in tests.
-- [ ] "Algo based timing sorter" 
+- [ ] "Algo based timing sorter"
       Each freezer service must implement a get_resource method, but each service uses the
       timing_sorter which itself has direct knowledge of which queue to sort into. Modify the
       sort() method to instead rely on a provided method on the service itself. It would most 

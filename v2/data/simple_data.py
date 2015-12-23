@@ -1,13 +1,15 @@
 
 
 class ServiceMetaData:
-    def __init__(self, alias, delay=0, retry_enabled=-1, recovery_enabled=False):
+    def __init__(self, alias, delay=0, retries=-1, recovery_enabled=False):
         """
 
         :param alias: service name also known as alias
-        :param delay: milliseconds to delay the start of the service (applies to recovery)
-        :param retry_enabled: allowed number of retries. -1 is infinite. 0 is no retries. >1 the scheduler
-                      will allow this number of retries.
+        :param delay: milliseconds to delay the start of the service. This does not apply to recovery.
+                      In recovery, the standard delay is purely a function of based on starts.
+        :param retries: allowed number of retries. -1 is infinite. 0 is no retries. >1 the scheduler
+                      will allow this number of retries. Infinite restarts will apply the restart
+                      delay. No exception to this.
         :param recovery_enabled: enables the service to be recovered. Both this value and
                                  retry need to be enabled for recovery to work. This value
                                  takes precendece. It will then rely on the retry count.
@@ -18,14 +20,21 @@ class ServiceMetaData:
         """
         # base info
         self.alias = alias  # name of the service
-        self.delay = delay  # how long to delay the start of the service
-        self.retry_enabled = retry_enabled  # how many times to retry
+        self.delay = delay  # how long to delay the start of the service THE FIRST TIME
+        self.retries = retries  # how many times to retry
         self.recovery_enabled = recovery_enabled  # if the service is allowed to recover
 
         # runtime info
         self.starts = 0
-        self.exception = None
-        self.failed = False
+        self.exceptions = []
+        self.failed = False  # this might not be in sync with service state, thus might not be useful at all
+
+    def retry_limit_reached(self):
+        # infinite retries
+        if self.retries == -1:
+            return False
+
+        return (self.starts - 1) >= self.retries
 
 
 class ServiceDirectoryEntry:

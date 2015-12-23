@@ -1,15 +1,13 @@
 # External
-import time
-import gevent
 
 # Lib
-from v2.system.os import Scheduler, ServiceManager
-from v2.system.services import BaseService, QueuedService
-from v2.system.states import BaseStates
+from v2.services.services import BaseService
 from v2.system.exceptions import IdleActionException, ServiceNotIdleException
+from v2.system.os import Scheduler, ServiceManager
+from v2.system.states import BaseStates
 
 # Test helpers
-from mock_services import MockQueuedService, TestWorker
+from mock_services import TestWorker
 
 
 def test_baseservice():

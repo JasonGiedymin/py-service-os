@@ -1,10 +1,10 @@
 # External
 import time
-import gevent
 
+import gevent
 # Lib
 from v2.system.os import Scheduler
-from v2.system.services import BaseService
+from v2.services.services import BaseService
 from v2.system.states import BaseStates
 
 # Test helpers

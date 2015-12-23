@@ -3,8 +3,9 @@ import gevent
 from greplin import scales
 
 # lib
-from v2.system.exceptions import ServiceMetaDataNotFound
-from v2.system.services import BaseService, DirectoryService
+from v2.system.exceptions import ServiceMetaDataNotFound, ServiceNotIdleException
+from v2.services.services import BaseService, DirectoryService
+from v2.system.states import BaseStates
 from v2.system.strategies import RoundRobinIndexer
 from v2.data.simple_data import ServiceMetaData, ServiceDirectoryEntry
 
@@ -21,7 +22,6 @@ class ServiceManager(BaseService):
         scales.init(self, '/service-manager')
         BaseService.__init__(self, name, parent_logger=parent_logger)
         self.service_directory = {}
-
         self.directory_service_proxy = DirectoryService(self.service_directory, parent_logger=self.log)
 
         # BaseService declares an interface to the directory proxy
@@ -39,14 +39,36 @@ class ServiceManager(BaseService):
             return 0
 
         def startable(service_entry):
-            return service_entry.service.ready() \
-                   and not service_entry.service.has_started() \
-                   # and not service.is_truly_dead()
+            """
+            Checks to see if a service is startable. Can't start something which
+            has already started.
+            :param service_entry:
+            :return:
+            """
+            return (service_entry.service.ready() and
+                    not service_entry.service.has_started())
 
         def recoverable(service_entry):
-            return service_entry.service.is_zombie() \
-                   and service_entry.service_meta.recovery_enabled \
-                   # and not service.is_truly_dead()
+            """
+            A recoverable service is one which is a zombie (has no BaseService state)
+            as if it was lost and re-created by some means or never updated properly.
+            Either way, check if it has recovery so that it may be brought back to a
+            legit life.
+            :param service_entry:
+            :return:
+            """
+            return (service_entry.service.is_zombie() and
+                    service_entry.service_meta.recovery_enabled)
+
+        def resurrectable(service_entry):
+            """
+            A resurrectable service is one which is truely dead but is allowed to be
+            brought back to life.
+            :param service_entry:
+            :return:
+            """
+            return (service_entry.service.is_truly_dead() and
+                    service_entry.service_meta.recovery_enabled)
 
         def start(service_entry):
             """
@@ -55,12 +77,30 @@ class ServiceManager(BaseService):
             :param service_entry:
             :return:
             """
-            # delay service startup if available
-            delay = service_entry.service_meta.delay
-            if delay > 0:
-                gevent.sleep(delay)
+            if service_entry.service.get_state() is BaseStates.Starting:
+                # this service is starting up...
+                # TODO: here examine if it reached a start timeout or something, cause it could go wrong
+                return 0
 
-            pid = service_entry.service.start()
+            # only start if retries have not been reached, exit
+            # immediately
+            if service_entry.service_meta.retry_limit_reached():
+                retries = service_entry.service_meta.retries
+                self.log.debug("retry limit [%d] reached for service" % retries,
+                               service_alias=service_entry.service_meta.alias)
+                return 0
+
+            pid = None
+
+            try:
+                pid = service_entry.service.start(service_entry.service_meta.delay)
+            except ServiceNotIdleException as service_ex:
+                # TODO: use the finite exception in the future
+                service_entry.service.handle_error()
+            except Exception as ex:
+                # TODO: use the finite exception in the future
+                service_entry.service.handle_error()
+
             service_entry.service_meta.starts += 1
 
             if pid is not None:
@@ -74,18 +114,27 @@ class ServiceManager(BaseService):
             ), id=entry.service.unique_name, lineage=entry.service.lineage)
             raise ServiceMetaDataNotFound
 
-        if startable(entry):
-            self.log.info("starting service %s" % entry.service_meta.alias)
+        # complete dead services have priority, higher in the evaluation, exit fast, detect fast
+        if resurrectable(entry):
+            self.log.info("service [%s] was found dead considering to be resurrected..." % entry.service_meta.alias,
+                          service_alias=entry.service_meta.alias)
+            ex = entry.service.greenlet.exception
+            if ex is not None:
+                entry.service_meta.exceptions.append(entry.service.greenlet.exception)
+            return start(entry)
+        elif startable(entry):
+            self.log.info("executing service start for [%s]" % entry.service_meta.alias,
+                          service_alias=entry.service_meta.alias)
             return start(entry)
         elif recoverable(entry):
             # if a service is able to be recovered we must put it in the idle state
             entry.service.idle()
             self.log.info("recovering and restarting possible zombied service: [%s]" % entry.service_meta.alias)
             return start(entry)
-        else:  # if already started, and not a zombie do nothing.
+        else:  # if already started perhaps, and not a zombie do nothing.
             return 0
 
-    def _start_services(self):
+    def monitor_services(self):
         """
         Starts all designated services from the internal directory.
 
@@ -121,7 +170,7 @@ class ServiceManager(BaseService):
         self.directory_service_proxy.start()
 
         self.log.info("starting services...")
-        self._start_services()
+        self.monitor_services()
 
         return self.greenlet
 
@@ -225,6 +274,7 @@ class ServiceManager(BaseService):
     def get_service_entry(self, alias):
         return self.get_directory_service_proxy().get_service_entry(alias)
 
+
 class Scheduler(BaseService):
     """
     The scheduler at this point is in charge of scheduling a service action
@@ -254,7 +304,7 @@ class Scheduler(BaseService):
         while self.should_loop():
             # self.event_loop_next()
             # schedule the service manager to start designated services if any
-            pids = self.service_manager._start_services()
+            pids = self.service_manager.monitor_services()
 
             gevent.idle()
 

@@ -1,9 +1,8 @@
 # Lib
-from v2.system.services import BaseService
 from v2.data.queue import BaseQueue, MemQueue
+from v2.services.services import BaseService
 
 # System
-import gevent
 
 __author__ = 'jason'
 

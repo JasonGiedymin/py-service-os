@@ -2,9 +2,8 @@
 import gevent
 
 # lib
-from v2.system.services import BaseService, ExecutorService
+from v2.services.services import BaseService, ExecutorService
 from v2.system.os import Scheduler
-from v2.data.simple_data import ServiceMetaData
 
 __author__ = 'jason'
 
@@ -49,25 +48,30 @@ class CannedOS(ExecutorService):
         self.log.info("booting up...")
         self.scheduler.start()
         self.set_directory_service_proxy(self.scheduler.get_directory_service_proxy())
+        self.start()  # start self, as an executor service runs one pass and registers as successful
 
     def shutdown(self):
         self.log.info("shutting down...")
         self.scheduler.stop()
         self.stop()
 
-    def schedule_service(self, service_class, service_meta):
+    def schedule_service(self, service_class, service_meta, error_handlers=[]):
         """
         Take a service and let the instaniation begin here.
         :param service_class: python class to use
         :param service_meta: metadata about the service
+        :param error_handlers: a list of error handlers which to execute
         :return:
         """
         service = service_class(service_meta.alias, parent_logger=self.log)
+        service.add_error_handlers(error_handlers)
         self.scheduler.add_service_with_meta(service, service_meta)
 
     def schedule_provided_service(self, service):
         """
+        SOON TO BE DEPRECATED.
         Take a service and schedules it as-is.
+        Prefer not to use this method.
         :param service:
         :return:
         """

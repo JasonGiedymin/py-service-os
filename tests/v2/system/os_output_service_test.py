@@ -3,7 +3,7 @@ import gevent
 
 # Lib
 from v2.system.os import Scheduler, ServiceManager
-from v2.system.services import BaseService, QueuedService
+from v2.services.services import BaseService, QueuedService
 from v2.system.states import BaseStates
 from v2.data.simple_data import ServiceMetaData
 

@@ -1,7 +1,7 @@
 # Lib
-from v2.system.services import BaseService
 from v2.data.processors.resource import ResourceAnalyzer, ResourceStates
 from v2.data.processors.timing_sorter import ResourceTimingSorter
+from v2.services.services import BaseService
 
 # System
 import gevent

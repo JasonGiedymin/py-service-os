@@ -5,6 +5,7 @@ from greplin import scales
 from greplin.scales import meter
 
 from v2.system.states import BaseStates
+from v2.services.error_handler import ErrorHandlerMixin
 from v2.system.exceptions import IdleActionException, ServiceNotIdleException
 from v2.utils.loggers import Logger
 
@@ -12,15 +13,16 @@ from v2.utils.loggers import Logger
 __author__ = 'jason'
 
 
-class BaseService:
+class BaseService(ErrorHandlerMixin):
     """
-    A base service. Note this is a class which
-    composites a greenlet. This is in contrast
-    with the Actor class which subclasses greenlet
-    for performance and being lightweight. This
-    class is still aimed for performance but has
-    many management routines and actions which are
-    necessary.
+    A base service. Note this is a class which composites a greenlet. This is in
+    contrast with the Actor class which subclasses greenlet and may be more
+    performant and lightweight. This class is still aimed for performance but
+    has many management routines and actions.
+
+    This base class has many of the same attributes as the underlying gevent
+    greenlet but note they are not the same. Effort was made to make semantic
+    usage easier. Do not assume anything similar with gevent.
     """
 
     # state averages from 75, 95, 98, 99, 999,
@@ -34,7 +36,11 @@ class BaseService:
     # format_str = '%(asctime)s\t%(levelname)s -- %(processName)s %(filename)s:%(lineno)s -- %(message)s'
     # console.setFormatter(logging.Formatter(format_str))
 
-    def __init__(self, name="base-service", directory_proxy=None, parent_logger=None, enable_service_recovery=False):
+    def __init__(self,
+                 name="base-service",
+                 directory_proxy=None,
+                 parent_logger=None,
+                 enable_service_recovery=False):
         """
         uuid - a uuid4 value for the service
         alias - a colloquial alias
@@ -45,6 +51,8 @@ class BaseService:
         :param parent_logger:
         :return:
         """
+        ErrorHandlerMixin.__init__(self)
+
         self.uuid = uuid4()  # unique uuid
         self.alias = name  # name, may collide
         self.unique_name = '%s/%s' % (self.alias, self.uuid)  # a unique name for this service, will always be unique
@@ -102,16 +110,31 @@ class BaseService:
         """
         pass
 
-    def start(self):
-        self.log.info("Starting...")
+    def start_event_loop(self):
+        self.log.debug("service starting event loop...", delay=delay)
+        self.set_state(BaseStates.Started)
+        self.event_loop()
 
+    def start(self, delay=0):
         if self.get_state() is not BaseStates.Idle:  # or not self.enable_service_recovery:
             self.log.error("could not start service as it is not in an idle state, current state: [%s]" %
                            self.get_state(), state=self.get_state())
             raise ServiceNotIdleException()
 
-        self.greenlet = gevent.spawn(self.event_loop)
-        self.set_state(BaseStates.Started)
+        if delay > 0:
+            self.log.debug("service starting with delay...", delay=delay)
+            self.greenlet = gevent.spawn_later(delay, self.start_event_loop)
+            self.set_state(BaseStates.Starting)
+        else:
+            self.log.debug("service starting...")
+            self.set_state(BaseStates.Starting)  # TODO: time how long services take to actually start
+            self.greenlet = gevent.spawn(self.start_event_loop)
+
+        #
+        # --- NO CODE BEYOND THE IF/ELSE BLOCK ABOVE ---
+        #
+        # this method works asynchronously and thus code here will execute immediately
+
         return self.greenlet
 
     def stop(self):
@@ -164,9 +187,16 @@ class BaseService:
         Not a zombie. Stopped is not dead. Zombie is not dead (It's alive stupid!).
         This method checks if the greenlet was not successful and has logged an
         exception.
+
+        Note: below I don't check for service.idle() because that is a sign that
+        a service is alive and about to be started. Instead I focus on the greenlet
+        which if was created will still have values such as exception and successful
+        registered.
         :return:
         """
-        return not self.greenlet.successful() and self.greenlet.exception is not None
+        return self.greenlet is not None \
+            and not self.greenlet.successful() \
+            and self.greenlet.exception is not None
 
     def idle(self):
         """
@@ -199,12 +229,19 @@ class BaseService:
 class ExecutorService(BaseService):
     """
     An execution service is really a symantic object that holds references to
-    services. Itself should not run an event loop.
+    services. Itself should not run an event loop. It will register as
+    `BaseStates.Idle` when created, however it will remain in that state.
+    These are services which for now are code bundles, that in the future
+    could be an event loop processor.
     """
     def should_loop(self):
         return False
 
     def event_loop(self):
+        """
+        Effectively a one loop pass.
+        :return:
+        """
         gevent.idle()
 
 
@@ -263,14 +300,14 @@ class DirectoryService(BaseService):
     def get_service_count(self):
         return len(self._service_manager_directory)
 
-    def get_service(self, name):
-        return self._service_manager_directory.get(name).service
+    def get_service(self, alias):
+        return self._service_manager_directory.get(alias).service
 
-    def get_service_meta(self, name):
-        return self._service_manager_directory.get(name).service_meta
+    def get_service_meta(self, alias):
+        return self._service_manager_directory.get(alias).service_meta
 
-    def get_service_entry(self, name):
-        return self._service_manager_directory.get(name)
+    def get_service_entry(self, alias):
+        return self._service_manager_directory.get(alias)
 
     def get_outputservice(self):
         return self._service_manager_directory.get("output-service")

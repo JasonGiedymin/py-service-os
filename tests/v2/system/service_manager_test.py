@@ -1,6 +1,7 @@
-from v2.system.services import BaseService
-from v2.system.os import ServiceManager
 from v2.data.simple_data import ServiceMetaData
+from v2.services.services import BaseService
+from v2.system.os import ServiceManager
+
 
 def test_service_manager():
     manager = ServiceManager("service-manager-1")
