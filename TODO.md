@@ -220,8 +220,19 @@ need ms or ns.
                       put? Construct a test to see how async this woks.
                 - [x] fix start delay, it does not actually work
                     - [x] add new state "Starting", and make service_manager know about it
-                - [ ] add functionality to make service_manager know that a service didn't start properly
+                - [x] add functionality to make service_manager know that a service didn't start properly
                       according to delay, maybe set a timeout? Service start timeout = delay + some base value?
+                      Make meta hold the timeout value, and service hold the time indexes. =>
+                      - [x] finish `did_service_timeout`
+                      - [x] finish `start_time_delta`
+                - [x] redo delay test to actually assert on the time delayed
+                - [x] add test for service start timeout
+                - [x] fix bug where `os_service_delay_test.py` timesout but it shouldn't happen =>
+                      made sure that timeouts had to have a value greater than zero
+                - [x] fix bug where retries were not accounted for during service exceptions => now they
+                      are and will fall through various zombie/dead checks in `os` service manager
+                - [x] fix bug where service is actually in `starting` state rather than started for
+                      `base_service` class test
                 - [ ] apply algorithm to service starts which applies the starts count, the algorithm
                       should have fast restarts up until the 4th or 5th restart where a noticible
                       time delay should occur

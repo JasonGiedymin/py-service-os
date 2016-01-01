@@ -1,4 +1,5 @@
 from uuid import uuid4
+import time
 import gevent
 from gevent.queue import Queue
 from greplin import scales
@@ -52,6 +53,10 @@ class BaseService(ErrorHandlerMixin):
         :return:
         """
         ErrorHandlerMixin.__init__(self)
+
+        # time indexes
+        self.time_starting_index = None  # time index when service was 'starting'
+        self.time_started_index = None  # time index when service was started
 
         self.uuid = uuid4()  # unique uuid
         self.alias = name  # name, may collide
@@ -110,9 +115,43 @@ class BaseService(ErrorHandlerMixin):
         """
         pass
 
+    def did_service_timeout(self):
+        """
+        A timeout occurs when a service remains in the starting phase.
+        :return:
+        """
+        timeout = self.get_directory_service_proxy().get_service_meta(self.alias).start_timeout
+
+        if timeout > 0 and self.is_starting():
+            delay = self.get_directory_service_proxy().get_service_meta(self.alias).delay
+            timeout = self.get_directory_service_proxy().get_service_meta(self.alias).start_timeout
+
+            # calculate by adding the delay that will be introduced
+            # with the timeout value, and this time index will be the maximum time
+            # which with to wait for the service to start
+            expected_timeout = delay + timeout
+
+            # now determine if the time that has passed has met or exceeded the
+            # calculated timeout index from above
+            return self.start_time_delta() >= expected_timeout
+
+        return False
+
+    def start_time_delta(self):
+        """
+        Returns the time difference between now and when the service entered into the
+        `Starting` state. This is how long since the service first indexed as being
+        in been in the `Starting` position. Note that this will always calculate,
+        and should be used as a utility method.
+        :return:
+        """
+        now = time.time()
+        return now - self.time_starting_index
+
     def start_event_loop(self):
-        self.log.debug("service starting event loop...", delay=delay)
+        self.log.debug("service starting event loop...")
         self.set_state(BaseStates.Started)
+        self.time_started_index = time.time()
         self.event_loop()
 
     def start(self, delay=0):
@@ -123,6 +162,7 @@ class BaseService(ErrorHandlerMixin):
 
         if delay > 0:
             self.log.debug("service starting with delay...", delay=delay)
+            self.time_starting_index = time.time()
             self.greenlet = gevent.spawn_later(delay, self.start_event_loop)
             self.set_state(BaseStates.Starting)
         else:
@@ -170,6 +210,9 @@ class BaseService(ErrorHandlerMixin):
 
     def has_stopped(self):
         return self.get_state() is BaseStates.Stopped
+
+    def is_starting(self):
+        return self.get_state() is BaseStates.Starting
 
     def has_state(self):
         return self.get_state() is not None

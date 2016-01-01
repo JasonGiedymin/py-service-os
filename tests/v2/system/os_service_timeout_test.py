@@ -25,6 +25,9 @@ from tests.v2.system import mock_requests
 worker_interval = .5
 scheduler_interval = worker_interval + 1
 os_stop_time = 10
+timeout = 2  # if it doesn't start in 2 seconds, throw Exception
+delay = 5
+combined_time = timeout + delay
 
 
 class MockService(BaseService):
@@ -46,6 +49,37 @@ class MockService(BaseService):
             self.ack_time = time.time()
 
 
+class MockServiceBad(BaseService):
+    """
+    Mock service used to test delay was executed.
+    It will remain in the constructor for 20 seconds or be killed before
+    that.
+    """
+    def __init__(self, name="base-service", parent_logger=None):
+        BaseService.__init__(self, name, parent_logger=parent_logger)
+        self.ack = False
+        self.ack_time = None
+
+    def start_event_loop(self):
+        self.log.debug("mock event loop not starting, leaving in starting position for test.")
+        return  # do nothing, state will remain in 'starting' position
+
+    def should_loop(self):
+        # run until ack is True or something external stops this service
+        return self.ack is False
+
+    def event_loop(self):
+        """
+        This method should never run because this mock class overrides the
+        `start_event_loop` method.
+        :return:
+        """
+        while self.should_loop():
+            self.ack = True  # <-- if this code runs, this test is a failure!
+            assert self.ack is False  # make sure this fails with an assert
+            self.ack_time = time.time()
+
+
 class MockErrorHandler(ErrorHandler):
     def __init__(self):
         ErrorHandler.__init__(self)
@@ -59,10 +93,11 @@ class MockErrorHandler(ErrorHandler):
         return service_meta
 
 
-def test_with_delays():
+def test_with_delays_and_timeout():
     """
     This tests for service delays when starting. The service will delay start for 5
-    seconds, and the os will stop in 10 seconds.
+    seconds, and after that a timeout of 2 seconds. It will however start just fine
+    and will be successfull.
     :return:
     """
     os = CannedOS("CannedOS")
@@ -71,7 +106,7 @@ def test_with_delays():
     # == services ==
     error_handlers = [MockErrorHandler]
     os.schedule_service(MockService,
-                        ServiceMetaData("mock-service", delay=5, recovery_enabled=False),
+                        ServiceMetaData("mock-service", delay=delay, start_timeout=timeout, recovery_enabled=False),
                         error_handlers=error_handlers)
 
     # now assert services have retries set to 0
@@ -98,12 +133,12 @@ def test_with_delays():
 
 def test_with_delay_that_never_starts():
     """
-    This tests for service delays when starting but it won't ever start because
-    the OS is scheduled to stop in 10 seconds, while the service start delay is
-    set to start in 13 seconds (13 chosen because a time too close to the os
-    stop of 10 like 11 might be too close on a very very slow system). On those
-    systems operations take time, account for that. However anything past
-    a couple seconds is not worth it.
+    This tests if the service started with a delay and if it timed out during the
+    start within 2 seconds. The mock service being used has a sleep call for 5
+    seconds that hopefully doesn't complete as another greenlet will remove
+    the reference. This is effectively like a hard error killing off the greenlet
+    reference. This shouldn't happen but if it does it should get picked up by the
+    service manager. This test simulates that.
     :return:
     """
     os = CannedOS("CannedOS")
@@ -111,23 +146,20 @@ def test_with_delay_that_never_starts():
 
     # == services ==
     error_handlers = [MockErrorHandler]
-    os.schedule_service(MockService,
-                        ServiceMetaData("mock-service", delay=13, recovery_enabled=False),
+    os.schedule_service(MockServiceBad,
+                        ServiceMetaData("mock-service-bad", delay=1, start_timeout=2, recovery_enabled=False),
                         error_handlers=error_handlers)
 
     # now assert services have retries set to 0
-    assert os.scheduler.get_service_manager().get_service_meta("mock-service").starts == 0
+    assert os.scheduler.get_service_manager().get_service_meta("mock-service-bad").starts == 0
 
     def stop_os():
         # by this time services have started and have registered retries == 1
-        meta = os.scheduler.get_service_manager().get_service_meta("mock-service")
-        service = os.scheduler.get_service_manager().get_service("mock-service")
+        meta = os.scheduler.get_service_manager().get_service_meta("mock-service-bad")
+        service = os.scheduler.get_service_manager().get_service("mock-service-bad")
 
         assert meta.starts == 1
-
-        # no exceptions occur as the system shutsdown before anything starts
-        assert len(meta.exceptions) == 0
-
+        assert len(meta.exceptions) == 1
         assert service.ack is False
 
         os.shutdown()
@@ -135,6 +167,9 @@ def test_with_delay_that_never_starts():
     # take timing from start to finish
     t1 = time.time()
     os_greenlet = gevent.spawn_later(os_stop_time, stop_os)
+    # remove_greenlet = gevent.spawn_later(2, remove_service)
+
+    # gevent.joinall([os_greenlet, remove_greenlet])
     gevent.joinall([os_greenlet])
 
     # == Test Validation/Verification ==

@@ -3,7 +3,7 @@ import gevent
 from greplin import scales
 
 # lib
-from v2.system.exceptions import ServiceMetaDataNotFound, ServiceNotIdleException
+from v2.system.exceptions import ServiceMetaDataNotFound, ServiceNotIdleException, ServiceTimeout
 from v2.services.services import BaseService, DirectoryService
 from v2.system.states import BaseStates
 from v2.system.strategies import RoundRobinIndexer
@@ -58,7 +58,8 @@ class ServiceManager(BaseService):
             :return:
             """
             return (service_entry.service.is_zombie() and
-                    service_entry.service_meta.recovery_enabled)
+                    service_entry.service_meta.recovery_enabled and
+                    not service_entry.service_meta.retry_limit_reached())
 
         def resurrectable(service_entry):
             """
@@ -68,7 +69,8 @@ class ServiceManager(BaseService):
             :return:
             """
             return (service_entry.service.is_truly_dead() and
-                    service_entry.service_meta.recovery_enabled)
+                    service_entry.service_meta.recovery_enabled and
+                    not service_entry.service_meta.retry_limit_reached())
 
         def start(service_entry):
             """
@@ -77,10 +79,6 @@ class ServiceManager(BaseService):
             :param service_entry:
             :return:
             """
-            if service_entry.service.get_state() is BaseStates.Starting:
-                # this service is starting up...
-                # TODO: here examine if it reached a start timeout or something, cause it could go wrong
-                return 0
 
             # only start if retries have not been reached, exit
             # immediately
@@ -88,6 +86,8 @@ class ServiceManager(BaseService):
                 retries = service_entry.service_meta.retries
                 self.log.debug("retry limit [%d] reached for service" % retries,
                                service_alias=service_entry.service_meta.alias)
+
+                service_entry.service.set_state(BaseStates.Stopped)
                 return 0
 
             pid = None
@@ -107,6 +107,22 @@ class ServiceManager(BaseService):
                 return 1
             else:
                 return 0
+
+        def timed_out(service_entry):
+            return service_entry.service.did_service_timeout()
+
+        def remove_service(service_entry):
+            service_entry.service.stop()  # attemp to stop if at all possible
+            service_entry.service_meta.add_exception(ServiceTimeout)
+            service_entry.service.handle_error()
+
+            service_entry.service.set_state(BaseStates.Stopped)
+
+            # the call below is never right, it would change the dictionary
+            # size during the event loop!
+            # self.service_directory.pop(service_entry.service_meta.alias)
+
+            return 0
 
         if entry.service_meta is None:
             self.log.fatal("Could not find service metadata for service: [%s]" % (
@@ -131,7 +147,9 @@ class ServiceManager(BaseService):
             entry.service.idle()
             self.log.info("recovering and restarting possible zombied service: [%s]" % entry.service_meta.alias)
             return start(entry)
-        else:  # if already started perhaps, and not a zombie do nothing.
+        elif timed_out(entry):
+            return remove_service(entry)
+        else:  # if already started perhaps, and not a zombie, or has not yet timed out; do nothing.
             return 0
 
     def monitor_services(self):
@@ -158,6 +176,10 @@ class ServiceManager(BaseService):
         started_services = 0
 
         for alias, entry in self.service_directory.iteritems():
+            """
+            Very important to not change this directory's size during
+            the start_service or any child there after.
+            """
             started_services += self.start_service(alias)
 
         if started_services > 0:

@@ -15,7 +15,7 @@ def test_baseservice():
     Base service tests for:
         - [x] name on init
         - [x] idle state on init
-        - [x] started state on start()
+        - [x] starting state on start()
         - [x] ready() alias for idle state
         - [x] stopped state on stop()
         - [x] idle state exception when service not in stopped state
@@ -32,7 +32,7 @@ def test_baseservice():
 
     greenlet = base.start()
     assert greenlet is not None
-    assert base.get_state() == BaseStates.Started
+    assert base.get_state() == BaseStates.Starting
     assert base.ready() is False
 
     # exception should be thrown if state is started
@@ -82,7 +82,7 @@ def test_baseservice_service_directory():
 
     greenlet = base.start()
     assert greenlet is not None
-    assert base.get_state() == BaseStates.Started
+    assert base.get_state() == BaseStates.Starting
     assert base.ready() is False
 
     # exception should be thrown if state is started
@@ -104,7 +104,7 @@ def test_scheduler():
     assert scheduler.get_state() == BaseStates.Idle
 
     scheduler.start()
-    assert scheduler.get_state() == BaseStates.Started
+    assert scheduler.get_state() == BaseStates.Starting
 
     scheduler.stop()
     assert scheduler.get_state() == BaseStates.Stopped

@@ -95,7 +95,7 @@ def test_services_for_exceptions():
     # == main services - in reverse order of execution so that
     #    analyzer runs last ==
     os.schedule_service(MockResponseService,
-                        ServiceMetaData("mock-response-service", recovery_enabled=True),
+                        ServiceMetaData("mock-response-service", retries=2, recovery_enabled=True),
                         error_handlers=error_handlers)
     os.schedule_service(MockRequestService, ServiceMetaData("mock-requestor", recovery_enabled=True))
     os.schedule_service(AnalyzerService, ServiceMetaData("analyzer-service", recovery_enabled=True))
@@ -116,6 +116,9 @@ def test_services_for_exceptions():
         assert os.scheduler.get_service_manager().get_service_meta("analyzer-service").starts == 1
         assert os.scheduler.get_service_manager().get_service_meta("mock-requestor").starts == 1
         assert os.scheduler.get_service_manager().get_service_meta("mock-initializer-service").starts == 1
+
+        # retry limit is set to 2, should only see two exceptions in the list
+        assert len(os.scheduler.get_service_manager().get_service_meta("mock-response-service").exceptions) == 2
 
         os.shutdown()
 
