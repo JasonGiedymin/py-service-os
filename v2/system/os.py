@@ -21,6 +21,7 @@ class ServiceManager(BaseService):
     def __init__(self, name, parent_logger=None):
         scales.init(self, '/service-manager')
         BaseService.__init__(self, name, parent_logger=parent_logger)
+
         self.service_directory = {}
         self.directory_service_proxy = DirectoryService(self.service_directory, parent_logger=self.log)
 
@@ -93,7 +94,7 @@ class ServiceManager(BaseService):
             pid = None
 
             try:
-                pid = service_entry.service.start(service_entry.service_meta.delay)
+                pid = service_entry.service.start(service_entry.service_meta)
             except ServiceNotIdleException as service_ex:
                 # TODO: use the finite exception in the future
                 service_entry.service.handle_error()

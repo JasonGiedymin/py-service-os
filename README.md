@@ -53,6 +53,18 @@ pip install -U pytest-flask
 # pip install -U gipc # may require `xcode-select --install` to be run
 pip install -U tox
 pip install -U structlog
+pip install -U ipython
+pip install -U jupyter
+pip install -U python-igraph
+pip install -U matplotlib
+pip install -U Jinja2
+pip install -U numpy
+pip install -U pyzmq
+pip install -U tornado
+pip install -U sympy
+pip install -U six
+pip install -U pyparsing
+ 
 ```
 
 ## Tests

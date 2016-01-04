@@ -154,20 +154,30 @@ class BaseService(ErrorHandlerMixin):
         self.time_started_index = time.time()
         self.event_loop()
 
-    def start(self, delay=0):
+    def start(self, meta=None):
         if self.get_state() is not BaseStates.Idle:  # or not self.enable_service_recovery:
             self.log.error("could not start service as it is not in an idle state, current state: [%s]" %
                            self.get_state(), state=self.get_state())
             raise ServiceNotIdleException()
 
-        if delay > 0:
-            self.log.debug("service starting with delay...", delay=delay)
+        if meta is not None:
+            # delays are only allowed on first start, after this a function must be supplied
+            delay = 0
+            msg = "service starting with delay..."
+            if meta.starts == 0 and meta.delay > 0:
+                self.log.debug("service starting with delay...", delay=delay)
+                delay = meta.delay
+            else:
+                self.log.debug("service starting with delay function...", delay=delay, delay_func=meta.retry_delay_fx.__name__)
+                delay = meta.next_delay()
+
             self.time_starting_index = time.time()
             self.greenlet = gevent.spawn_later(delay, self.start_event_loop)
-            self.set_state(BaseStates.Starting)
-        else:
-            self.log.debug("service starting...")
             self.set_state(BaseStates.Starting)  # TODO: time how long services take to actually start
+        else:  # no meta, assume base service
+            self.time_starting_index = time.time()
+            self.set_state(BaseStates.Starting)  # TODO: time how long services take to actually start
+            self.log.debug("service starting...")
             self.greenlet = gevent.spawn(self.start_event_loop)
 
         #

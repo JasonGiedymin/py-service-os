@@ -1,7 +1,9 @@
+from v2.services.retry_delays import no_delay
 
 
 class ServiceMetaData:
-    def __init__(self, alias, delay=0, retries=-1, start_timeout=0, recovery_enabled=False):
+    def __init__(self, alias, delay=0, retries=-1, retry_delay_fx=no_delay,
+                 start_timeout=0, recovery_enabled=False):
         """
 
         :param alias: service name also known as alias
@@ -25,7 +27,11 @@ class ServiceMetaData:
         # base info
         self.alias = alias  # name of the service
         self.delay = delay  # how long to delay the start of the service THE FIRST TIME
+
         self.retries = retries  # how many times to retry
+        # a function representing the amount of time to wait on a retry will use self.starts as input
+        self.retry_delay_fx = retry_delay_fx
+
         self.recovery_enabled = recovery_enabled  # if the service is allowed to recover
         self.start_timeout = start_timeout  # the amount of time to wait for the service to start
 
@@ -45,6 +51,9 @@ class ServiceMetaData:
         # use named arg so that it doesn't throw any errors with exceptions that don't yet
         # specify it.
         self.exceptions.append(exception(alias=self.alias))
+
+    def next_delay(self):
+        return self.retry_delay_fx(self.starts)
 
 
 class ServiceDirectoryEntry:

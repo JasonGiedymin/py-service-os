@@ -49,6 +49,7 @@ def test_baseservice():
     # In order to restart a service must be set to idle again.
     try:
         base.start()
+        assert not True  # <-- should never get here
     except ServiceNotIdleException as ex:
         assert ex is not None
 

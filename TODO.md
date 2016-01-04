@@ -215,7 +215,7 @@ need ms or ns.
                   code needs to be highly tested. The service manager doesn't do much. Defer until
                   more evidence that this is needed.
             - [x] fix starting services with delay where it will not log started state directly after 
-            - [*] fix to not allow infinite restarts, unless a delay is enacted.
+            - [x] fix to not allow infinite restarts, unless a delay is enacted.
                 - [x] `os.py` uses a delay, and now so does the base_service. Where should a delay be
                       put? Construct a test to see how async this woks.
                 - [x] fix start delay, it does not actually work
@@ -233,17 +233,23 @@ need ms or ns.
                       are and will fall through various zombie/dead checks in `os` service manager
                 - [x] fix bug where service is actually in `starting` state rather than started for
                       `base_service` class test
-                - [ ] apply algorithm to service starts which applies the starts count, the algorithm
-                      should have fast restarts up until the 4th or 5th restart where a noticible
-                      time delay should occur
-            - [ ] add logrithmic delay function to handle sequences of quick restarts
+                - [x] apply algorithm to service starts which applies the starts count, the algorithm
+                      should have fast restarts up until the 4th or 5th restart where a noticable
+                      time delay should occur => meta now includes reference to function which can be
+                      used else 0 or no delay will be used
+            - [x] add logrithmic delay function to handle sequences of quick restarts =>
+                  done see above scheduler enhancements
         - [x] fix bug where error handler does not report what error handler class it is reporting an
               error from
+        - [x] create a test that will test for truely dead services that have exceptions
+              occur within them. => done see above scheduler enhancements
         - [ ] fix service proxy duplication by removing `directory_service_proxy`, and instead use
               use `directory_proxy`
-        - [ ] To enable OS stop on error, create ExitOnError test middleware
-        - [ ] create a test that will test for truely dead services that have exceptions
-              occur within them.
+        - [ ] To enable OS stop on error, create ExitOnError error handler to be used when testing or in
+              production. Since BaseService now has ErrorHandlerMixin as part of the class structure we
+              can use the handle error method when an exception occurrs in the CannedOS start or event
+              loop method.
+        
     - [ ] consider moving enable_recovery into the service_manager from the service itself
     - [ ] record service failures with meta data
     - [ ] add os flag to halt on failures
@@ -303,6 +309,8 @@ need ms or ns.
       because they need to be tested and the entire monitor service method needs to be 
       rewritten slightly Add to that monitor_services method 'errored' that will exit 
       fast or flag a service as bad.
+- [ ] "tick tock timeout"
+      add tick/tock timeout, a timeout which occurs if a single even loop takes longer than expected
 - [ ] "OS Stop on failure"
       Set a flag so that during tests or production the OS can log errors directly
       or halt itself due to an error. This will also be helpful in tests.

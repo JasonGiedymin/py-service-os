@@ -54,8 +54,9 @@ class MockResponseService(ResponseParserService):
     """
     def event_loop(self):
         while self.should_loop():
-            self.log.info("TEST! - about to raise a manual test error...")
-            raise ServiceException("manual error - error 123")  # <------------ raise an exception there!
+            self.log.info("TEST! - about to raise a manual test error - seeing this is good!")
+            # <------------ raise an exception below!
+            raise ServiceException("manual error - error 123 - seeing this is good!")
 
 
 class MockErrorHandler(ErrorHandler):
@@ -83,6 +84,8 @@ def test_services_for_exceptions():
     # == mock Init - will wait for analyzer to run ==
     os.schedule_service(MockInitializerService, ServiceMetaData("mock-initializer-service", recovery_enabled=True))
 
+    os.schedule_service(AnalyzerService, ServiceMetaData("analyzer-service", recovery_enabled=True))
+
     # == freezes - will wait until analyzer runs ==
     os.schedule_service(Freezer50Service, ServiceMetaData("freezer-50", recovery_enabled=True))
     os.schedule_service(Freezer250Service, ServiceMetaData("freezer-250", recovery_enabled=True))
@@ -98,7 +101,6 @@ def test_services_for_exceptions():
                         ServiceMetaData("mock-response-service", retries=2, recovery_enabled=True),
                         error_handlers=error_handlers)
     os.schedule_service(MockRequestService, ServiceMetaData("mock-requestor", recovery_enabled=True))
-    os.schedule_service(AnalyzerService, ServiceMetaData("analyzer-service", recovery_enabled=True))
 
     # Manually restart a service to register a retry count of +1
     os.scheduler.restart_service("database-service")
@@ -122,12 +124,11 @@ def test_services_for_exceptions():
 
         os.shutdown()
 
-    def stop():
-        return gevent.spawn_later(os_stop_time, stop_os)
-
     # take timing from start to finish
     t1 = time.time()
-    gevent.joinall([stop()])
+
+    os_greenlet = gevent.spawn_later(os_stop_time, stop_os)
+    gevent.joinall([os_greenlet])
 
     # == Test Validation/Verification ==
     # Makes sure that the test timer works correctly
@@ -135,3 +136,4 @@ def test_services_for_exceptions():
     t3 = t2 - t1
     assert t3 > os_stop_time
 
+    assert os_greenlet.successful()
