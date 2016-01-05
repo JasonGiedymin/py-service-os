@@ -333,3 +333,4 @@ need ms or ns.
 - [ ] modify scheduler to accept timings for future or inteval like work, see if any open py libraries exist
 - [ ] create more friendly service supervisor for use with execution like services (may negate the need for below)
 - [ ] truely create a non event loop service (code only)
+- [ ] improve tests using xenon test script or `code_quality.sh` script

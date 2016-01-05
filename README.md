@@ -64,7 +64,8 @@ pip install -U tornado
 pip install -U sympy
 pip install -U six
 pip install -U pyparsing
- 
+pip install -U radon # https://radon.readthedocs.org/en/latest/commandline.html
+pip install -U xenon
 ```
 
 ## Tests
