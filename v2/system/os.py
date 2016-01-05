@@ -22,15 +22,15 @@ class ServiceManager(BaseService):
         scales.init(self, '/service-manager')
         BaseService.__init__(self, name, parent_logger=parent_logger)
 
-        self.service_directory = {}
-        self.directory_service_proxy = DirectoryService(self.service_directory, parent_logger=self.log)
+        self.service_directory = {}  # the directory
+        service_directory = DirectoryService(self.service_directory, parent_logger=self.log)  # wrapper
 
         # BaseService declares an interface to the directory proxy
         # we continue to do this (just like any other service uses
         # the directory proxy. It is a bit recursive, but done for
         # completeness sake. This is just another reference
         # designated by the BaseService parent class.
-        self.set_directory_service_proxy(self.directory_service_proxy)
+        self.set_directory_service_proxy(service_directory)
 
     def start_service(self, alias):
         entry = self.get_service_entry(alias)
@@ -190,7 +190,7 @@ class ServiceManager(BaseService):
 
     def start(self):
         BaseService.start(self)
-        self.directory_service_proxy.start()
+        self.get_directory_service_proxy().start()
 
         self.log.info("starting services...")
         self.monitor_services()
@@ -205,7 +205,7 @@ class ServiceManager(BaseService):
         :return:
         """
         self.log.debug("service %s added" % service_meta.alias)
-        service.set_directory_service_proxy(self.directory_service_proxy)
+        service.set_directory_service_proxy(self.get_directory_service_proxy())
         service.register()  # trigger and registration of data
 
         if service_meta.alias in self.service_directory:
@@ -256,7 +256,7 @@ class ServiceManager(BaseService):
         """
 
         if alias in self.service_directory:
-            service = self.directory_service_proxy.get_service(alias)
+            service = self.get_directory_service_proxy().get_service(alias)
             return self.stop_service_pid(service, halt=halt)
 
         self.log.error("Could not find service named [%s] to stop." % alias)
@@ -279,11 +279,11 @@ class ServiceManager(BaseService):
             # yes this method below will be O(2n), but we reuse methods.
             self.stop_service(pid_key)
 
-    def get_directory_service_proxy(self):
-        return self.directory_service_proxy
+    # def get_directory_service_proxy(self):
+    #     return self.directory_service_proxy
 
     def get_service_count(self):
-        return self.directory_service_proxy.get_service_count()
+        return self.get_directory_service_proxy().get_service_count()
 
     def get_services(self):
         return self.service_directory.items()

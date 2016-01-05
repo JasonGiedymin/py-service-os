@@ -203,7 +203,7 @@ need ms or ns.
               single pass event loop by calling upon the parent's BaseService.start() method during the
               CannedOS.bootup() routine.
         - [x] log services that have exceptions => exceptions are logged in service_meta.exceptions[]
-        - [*] service is truely dead and upon starting reaches retry limit, code `handle_service_exception()`
+        - [x] service is truely dead and upon starting reaches retry limit, code `handle_service_exception()`
             - [x] make universal error_handler, where OS can attach handlers to services as they are added,
                   having an issue where I made a class but wanted a mixin, figure it out, see canned_os
                   where I would mix it in, and the `error_handler_test.py`
@@ -243,7 +243,7 @@ need ms or ns.
               error from
         - [x] create a test that will test for truely dead services that have exceptions
               occur within them. => done see above scheduler enhancements
-        - [ ] fix service proxy duplication by removing `directory_service_proxy`, and instead use
+        - [x] fix service proxy duplication by removing `directory_service_proxy`, and instead use
               use `directory_proxy`
         - [ ] To enable OS stop on error, create ExitOnError error handler to be used when testing or in
               production. Since BaseService now has ErrorHandlerMixin as part of the class structure we
