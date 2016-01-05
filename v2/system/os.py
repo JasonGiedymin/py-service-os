@@ -33,12 +33,6 @@ class ServiceManager(BaseService):
         self.set_directory_service_proxy(service_directory)
 
     def start_service(self, alias):
-        entry = self.get_service_entry(alias)
-
-        if entry is None:
-            self.log.error("Could not find an entry for service named: [%s]" % alias)
-            return 0
-
         def startable(service_entry):
             """
             Checks to see if a service is startable. Can't start something which
@@ -73,6 +67,12 @@ class ServiceManager(BaseService):
                     service_entry.service_meta.recovery_enabled and
                     not service_entry.service_meta.retry_limit_reached())
 
+        def pid_status(pid):
+            if pid is None:
+                return 0
+            else:
+                return 1
+
         def start(service_entry):
             """
             Start a service based on a service entry from the directory.
@@ -89,7 +89,7 @@ class ServiceManager(BaseService):
                                service_alias=service_entry.service_meta.alias)
 
                 service_entry.service.set_state(BaseStates.Stopped)
-                return 0
+                return pid_status(None)
 
             pid = None
 
@@ -102,12 +102,8 @@ class ServiceManager(BaseService):
                 # TODO: use the finite exception in the future
                 service_entry.service.handle_error()
 
-            service_entry.service_meta.starts += 1
-
-            if pid is not None:
-                return 1
-            else:
-                return 0
+            service_entry.service_meta.increment_starts()
+            return pid_status(pid)
 
         def timed_out(service_entry):
             return service_entry.service.did_service_timeout()
@@ -122,36 +118,47 @@ class ServiceManager(BaseService):
             # the call below is never right, it would change the dictionary
             # size during the event loop!
             # self.service_directory.pop(service_entry.service_meta.alias)
-
             return 0
 
-        if entry.service_meta is None:
-            self.log.fatal("Could not find service metadata for service: [%s]" % (
-                entry.alias
-            ), id=entry.service.unique_name, lineage=entry.service.lineage)
-            raise ServiceMetaDataNotFound
+        def check_meta(entry_in):
+            if entry_in.service_meta is None:
+                self.log.fatal("Could not find service metadata for service: [%s]" % (
+                    entry_in.alias
+                ), id=entry_in.service.unique_name, lineage=entry_in.service.lineage)
+                raise ServiceMetaDataNotFound
 
-        # complete dead services have priority, higher in the evaluation, exit fast, detect fast
-        if resurrectable(entry):
-            self.log.info("service [%s] was found dead considering to be resurrected..." % entry.service_meta.alias,
-                          service_alias=entry.service_meta.alias)
-            ex = entry.service.greenlet.exception
-            if ex is not None:
-                entry.service_meta.exceptions.append(entry.service.greenlet.exception)
-            return start(entry)
-        elif startable(entry):
-            self.log.info("executing service start for [%s]" % entry.service_meta.alias,
-                          service_alias=entry.service_meta.alias)
-            return start(entry)
-        elif recoverable(entry):
-            # if a service is able to be recovered we must put it in the idle state
-            entry.service.idle()
-            self.log.info("recovering and restarting possible zombied service: [%s]" % entry.service_meta.alias)
-            return start(entry)
-        elif timed_out(entry):
-            return remove_service(entry)
-        else:  # if already started perhaps, and not a zombie, or has not yet timed out; do nothing.
-            return 0
+        def handle(in_entry):
+            # complete dead services have priority, higher in the evaluation, exit fast, detect fast
+            if resurrectable(in_entry):
+                self.log.info("service [%s] was found dead considering to be resurrected..." % in_entry.service_meta.alias,
+                              service_alias=in_entry.service_meta.alias)
+                ex = in_entry.service.greenlet.exception
+                if ex is not None:
+                    in_entry.service_meta.exceptions.append(in_entry.service.greenlet.exception)
+                return start(in_entry)
+            elif startable(in_entry):
+                self.log.info("executing service start for [%s]" % in_entry.service_meta.alias,
+                              service_alias=in_entry.service_meta.alias)
+                return start(in_entry)
+            elif recoverable(in_entry):
+                # if a service is able to be recovered we must put it in the idle state
+                in_entry.service.idle()
+                self.log.info("recovering and restarting possible zombied service: [%s]" % in_entry.service_meta.alias)
+                return start(in_entry)
+            elif timed_out(in_entry):
+                return remove_service(in_entry)
+            else:  # if already started perhaps, and not a zombie, or has not yet timed out; do nothing.
+                return 0
+
+        entry = self.get_service_entry(alias)
+
+        # weird use case should never happen
+        # if entry is None:
+        #     self.log.error("Could not find an entry for service named: [%s]" % alias)
+        #     return 0
+
+        check_meta(entry)
+        handle(entry)
 
     def monitor_services(self):
         """

@@ -55,6 +55,8 @@ class ServiceMetaData:
     def next_delay(self):
         return self.retry_delay_fx(self.starts)
 
+    def increment_starts(self, value=1):
+        self.starts += value
 
 class ServiceDirectoryEntry:
     def __init__(self, service, service_meta):
