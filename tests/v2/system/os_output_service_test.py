@@ -3,8 +3,9 @@ import gevent
 
 # Lib
 from v2.system.os import Scheduler, ServiceManager
-from v2.system.services import BaseService, QueuedService
+from v2.services.services import BaseService, QueuedService
 from v2.system.states import BaseStates
+from v2.data.simple_data import ServiceMetaData
 
 # Test helpers
 from mock_services import MockQueuedService, TestWorker
@@ -63,13 +64,16 @@ def test_output_service_write():
     # add worker
     worker_name = "test-worker-1"
     test_worker_1 = TestWorker(worker_name)
-    service_manager.add_service(test_worker_1, worker_name)
+    service_meta = ServiceMetaData(worker_name, recovery_enabled=False)
+    service_manager.add_service(test_worker_1, service_meta)
 
     # add output service
     scheduler = Scheduler("scheduler")
+    service_alias = "mock-output-service"
     mock_output_service = MockQueuedService(quick_death=True)
+    service_meta = ServiceMetaData(service_alias)
     timer = Timer(scheduler, mock_output_pid=mock_output_service)
-    service_manager.add_service(mock_output_service, "mock-output-service")
+    service_manager.add_service(mock_output_service, service_meta)
 
     assert test_worker_1.get_state() == BaseStates.Idle
     assert mock_output_service.get_state() == BaseStates.Idle

@@ -1,15 +1,13 @@
 # External
-import time
-import gevent
 
 # Lib
-from v2.system.os import Scheduler, ServiceManager
-from v2.system.services import BaseService, QueuedService
-from v2.system.states import BaseStates
+from v2.services.services import BaseService
 from v2.system.exceptions import IdleActionException, ServiceNotIdleException
+from v2.system.os import Scheduler, ServiceManager
+from v2.system.states import BaseStates
 
 # Test helpers
-from mock_services import MockQueuedService, TestWorker
+from mock_services import TestWorker
 
 
 def test_baseservice():
@@ -17,7 +15,7 @@ def test_baseservice():
     Base service tests for:
         - [x] name on init
         - [x] idle state on init
-        - [x] started state on start()
+        - [x] starting state on start()
         - [x] ready() alias for idle state
         - [x] stopped state on stop()
         - [x] idle state exception when service not in stopped state
@@ -34,7 +32,7 @@ def test_baseservice():
 
     greenlet = base.start()
     assert greenlet is not None
-    assert base.get_state() == BaseStates.Started
+    assert base.get_state() == BaseStates.Starting
     assert base.ready() is False
 
     # exception should be thrown if state is started
@@ -51,6 +49,7 @@ def test_baseservice():
     # In order to restart a service must be set to idle again.
     try:
         base.start()
+        assert not True  # <-- should never get here
     except ServiceNotIdleException as ex:
         assert ex is not None
 
@@ -84,7 +83,7 @@ def test_baseservice_service_directory():
 
     greenlet = base.start()
     assert greenlet is not None
-    assert base.get_state() == BaseStates.Started
+    assert base.get_state() == BaseStates.Starting
     assert base.ready() is False
 
     # exception should be thrown if state is started
@@ -106,7 +105,7 @@ def test_scheduler():
     assert scheduler.get_state() == BaseStates.Idle
 
     scheduler.start()
-    assert scheduler.get_state() == BaseStates.Started
+    assert scheduler.get_state() == BaseStates.Starting
 
     scheduler.stop()
     assert scheduler.get_state() == BaseStates.Stopped

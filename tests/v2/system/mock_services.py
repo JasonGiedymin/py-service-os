@@ -1,6 +1,6 @@
 import gevent
 
-from v2.system.services import QueuedService, BaseStates, BaseService
+from v2.services.services import QueuedService, BaseService
 
 __author__ = 'jason'
 

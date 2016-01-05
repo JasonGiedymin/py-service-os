@@ -19,7 +19,7 @@ import requests
 # print resp.content
 
 # Lib
-from v2.system.services import BaseService
+from v2.services.services import BaseService
 # from v2.data.db import MemDB
 # from v2.data.queue import MemQueue
 

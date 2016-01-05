@@ -1,12 +1,11 @@
 # External
 import time
-import gevent
 
+import gevent
 # Lib
-from v2.system.os import Scheduler, ServiceManager
-from v2.system.services import BaseService, QueuedService
+from v2.system.os import Scheduler
+from v2.services.services import BaseService
 from v2.system.states import BaseStates
-from v2.system.exceptions import IdleActionException
 
 # Test helpers
 from mock_services import MockQueuedService, TestWorker
@@ -37,22 +36,13 @@ def test_os():
     """
     At this point we've tested BaseService, so I expect
     the following to work.
+
+    Note: It is now prudent to leave this test or slowly invalidate it
+          and instead use the CannedOS. See
+          `v2/services/freezer_services_test.py` as an example
+
     :return:
     """
-
-    # # A timer that will trigger and call stop on the scheduler
-    # class Timer(BaseService):
-    #     def __init__(self, test_scheduler):
-    #         BaseService.__init__(self, "timer")
-    #         self.scheduler = test_scheduler
-    #
-    #     def event_loop(self):
-    #         gevent.sleep(scheduler_interval)
-    #         # gevent.kill(self.service.get_greenlet())
-    #         # essentially doing what a service manager is doing
-    #         # note: stop doing tests like this, use a canned os instead
-    #         self.scheduler.stop_service("mock-output-service")
-    #         self.scheduler.stop()
 
     scheduler = Scheduler("scheduler")
 
@@ -85,7 +75,7 @@ def test_os():
     assert directory_proxy.get_service("test-worker-1") == test_worker_1_service
 
     # direct check to make sure
-    assert directory_proxy._service_manager_directory == scheduler.get_service_manager()._directory
+    assert directory_proxy._service_manager_directory == scheduler.get_service_manager().service_directory
 
     # start test timer
     timer = Timer(scheduler, mock_output_pid=mock_queue_service)

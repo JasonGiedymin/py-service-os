@@ -1,10 +1,12 @@
 from uuid import uuid4
+import time
 import gevent
 from gevent.queue import Queue
 from greplin import scales
 from greplin.scales import meter
 
 from v2.system.states import BaseStates
+from v2.services.error_handler import ErrorHandlerMixin
 from v2.system.exceptions import IdleActionException, ServiceNotIdleException
 from v2.utils.loggers import Logger
 
@@ -12,15 +14,16 @@ from v2.utils.loggers import Logger
 __author__ = 'jason'
 
 
-class BaseService:
+class BaseService(ErrorHandlerMixin):
     """
-    A base service. Note this is a class which
-    composites a greenlet. This is in contrast
-    with the Actor class which subclasses greenlet
-    for performance and being lightweight. This
-    class is still aimed for performance but has
-    many management routines and actions which are
-    necessary.
+    A base service. Note this is a class which composites a greenlet. This is in
+    contrast with the Actor class which subclasses greenlet and may be more
+    performant and lightweight. This class is still aimed for performance but
+    has many management routines and actions.
+
+    This base class has many of the same attributes as the underlying gevent
+    greenlet but note they are not the same. Effort was made to make semantic
+    usage easier. Do not assume anything similar with gevent.
     """
 
     # state averages from 75, 95, 98, 99, 999,
@@ -33,6 +36,51 @@ class BaseService:
     # console = logging.StreamHandler()
     # format_str = '%(asctime)s\t%(levelname)s -- %(processName)s %(filename)s:%(lineno)s -- %(message)s'
     # console.setFormatter(logging.Formatter(format_str))
+
+    def __init__(self,
+                 name="base-service",
+                 directory_proxy=None,
+                 parent_logger=None,
+                 enable_service_recovery=False):
+        """
+        uuid - a uuid4 value for the service
+        alias - a colloquial alias
+        unique_name - a name which includes an easier to remember alias with the uuid
+
+        :param name:
+        :param directory_proxy:
+        :param parent_logger:
+        :return:
+        """
+        ErrorHandlerMixin.__init__(self)
+
+        # time indexes
+        self.time_starting_index = None  # time index when service was 'starting'
+        self.time_started_index = None  # time index when service was started
+
+        self.uuid = uuid4()  # unique uuid
+        self.alias = name  # name, may collide
+        self.unique_name = '%s/%s' % (self.alias, self.uuid)  # a unique name for this service, will always be unique
+        scales.init(self, self.unique_name)
+
+        if parent_logger is None:  # no parent, use fq name
+            self.lineage = "%s" % self.unique_name
+        else:
+            parent_name = parent_logger._context["name"]
+            self.lineage = "%s/%s" % (parent_name, self.unique_name)
+
+        self.log = Logger.get_logger(self.lineage)
+        self.greenlet = None
+        self._service_state = None
+        self.set_state(BaseStates.Idle)
+
+        # directory service proxy
+        self.directory_proxy = directory_proxy
+
+        # service recovery option
+        self.enable_service_recovery = enable_service_recovery
+
+        self.log.debug("Initialized.")
 
     def event_loop(self):
         """
@@ -53,41 +101,6 @@ class BaseService:
         # In an effort to narrow down to one state I choose `started`.
         return self.has_started()
 
-    def __init__(self, name="base-service", directory_proxy=None, parent_logger=None, enable_service_recovery=False):
-        """
-        uuid - a uuid4 value for the service
-        alias - a colloquial alias
-        unique_name - a name which includes an easier to remember alias with the uuid
-
-        :param name:
-        :param directory_proxy:
-        :param parent_logger:
-        :return:
-        """
-        self.uuid = uuid4()  # unique uuid
-        self.alias = name  # name, may collide
-        self.unique_name = '%s/%s' % (self.alias, self.uuid)  # a unique name for this service, will always be unique
-        scales.init(self, self.unique_name)
-
-        if parent_logger is None:  # no parent, use fq name
-            self.lineage = "%s" % self.unique_name
-        else:
-            parent_name = parent_logger._context["name"]
-            self.lineage = "%s/%s" % (parent_name, self.unique_name)
-
-        self.log = Logger.get_logger(self.lineage)
-        self.greenlet = None
-        self._service_state = None
-        self.set_state(BaseStates.Idle)
-
-        # directory service proxy
-        self._directory_proxy = directory_proxy
-
-        # service recovery option
-        self.enable_service_recovery = enable_service_recovery
-
-        self.log.debug("Initialized.")
-
     def register_child_stat(self, name):
         scales.initChild(self, name)
 
@@ -102,15 +115,76 @@ class BaseService:
         """
         pass
 
-    def start(self):
-        self.log.info("Starting...")
+    def did_service_timeout(self):
+        """
+        A timeout occurs when a service remains in the starting phase.
+        :return:
+        """
+        timeout = self.get_directory_service_proxy().get_service_meta(self.alias).start_timeout
 
+        if timeout > 0 and self.is_starting():
+            delay = self.get_directory_service_proxy().get_service_meta(self.alias).delay
+            timeout = self.get_directory_service_proxy().get_service_meta(self.alias).start_timeout
+
+            # calculate by adding the delay that will be introduced
+            # with the timeout value, and this time index will be the maximum time
+            # which with to wait for the service to start
+            expected_timeout = delay + timeout
+
+            # now determine if the time that has passed has met or exceeded the
+            # calculated timeout index from above
+            return self.start_time_delta() >= expected_timeout
+
+        return False
+
+    def start_time_delta(self):
+        """
+        Returns the time difference between now and when the service entered into the
+        `Starting` state. This is how long since the service first indexed as being
+        in been in the `Starting` position. Note that this will always calculate,
+        and should be used as a utility method.
+        :return:
+        """
+        now = time.time()
+        return now - self.time_starting_index
+
+    def start_event_loop(self):
+        self.log.debug("service starting event loop...")
+        self.set_state(BaseStates.Started)
+        self.time_started_index = time.time()
+        self.event_loop()
+
+    def start(self, meta=None):
         if self.get_state() is not BaseStates.Idle:  # or not self.enable_service_recovery:
-            self.log.error("could not start service as it is not in an idle state, current state: [%s]" % self.get_state())
+            self.log.error("could not start service as it is not in an idle state, current state: [%s]" %
+                           self.get_state(), state=self.get_state())
             raise ServiceNotIdleException()
 
-        self.greenlet = gevent.spawn(self.event_loop)
-        self.set_state(BaseStates.Started)
+        if meta is not None:
+            # delays are only allowed on first start, after this a function must be supplied
+            delay = 0
+            msg = "service starting with delay..."
+            if meta.starts == 0 and meta.delay > 0:
+                self.log.debug("service starting with delay...", delay=delay)
+                delay = meta.delay
+            else:
+                self.log.debug("service starting with delay function...", delay=delay, delay_func=meta.retry_delay_fx.__name__)
+                delay = meta.next_delay()
+
+            self.time_starting_index = time.time()
+            self.greenlet = gevent.spawn_later(delay, self.start_event_loop)
+            self.set_state(BaseStates.Starting)  # TODO: time how long services take to actually start
+        else:  # no meta, assume base service
+            self.time_starting_index = time.time()
+            self.set_state(BaseStates.Starting)  # TODO: time how long services take to actually start
+            self.log.debug("service starting...")
+            self.greenlet = gevent.spawn(self.start_event_loop)
+
+        #
+        # --- NO CODE BEYOND THE IF/ELSE BLOCK ABOVE ---
+        #
+        # this method works asynchronously and thus code here will execute immediately
+
         return self.greenlet
 
     def stop(self):
@@ -147,6 +221,9 @@ class BaseService:
     def has_stopped(self):
         return self.get_state() is BaseStates.Stopped
 
+    def is_starting(self):
+        return self.get_state() is BaseStates.Starting
+
     def has_state(self):
         return self.get_state() is not None
 
@@ -157,6 +234,22 @@ class BaseService:
         :return:
         """
         return not self.has_state() or not self.greenlet.started
+
+    def is_truly_dead(self):
+        """
+        Not a zombie. Stopped is not dead. Zombie is not dead (It's alive stupid!).
+        This method checks if the greenlet was not successful and has logged an
+        exception.
+
+        Note: below I don't check for service.idle() because that is a sign that
+        a service is alive and about to be started. Instead I focus on the greenlet
+        which if was created will still have values such as exception and successful
+        registered.
+        :return:
+        """
+        return self.greenlet is not None \
+            and not self.greenlet.successful() \
+            and self.greenlet.exception is not None
 
     def idle(self):
         """
@@ -180,21 +273,28 @@ class BaseService:
         self._service_state = state
 
     def set_directory_service_proxy(self, directory_proxy):
-        self._directory_proxy = directory_proxy
+        self.directory_proxy = directory_proxy
 
     def get_directory_service_proxy(self):
-        return self._directory_proxy
+        return self.directory_proxy
 
 
-class ExecutionService(BaseService):
+class ExecutorService(BaseService):
     """
     An execution service is really a symantic object that holds references to
-    services. Itself should not run an event loop.
+    services. Itself should not run an event loop. It will register as
+    `BaseStates.Idle` when created, however it will remain in that state.
+    These are services which for now are code bundles, that in the future
+    could be an event loop processor.
     """
     def should_loop(self):
         return False
 
     def event_loop(self):
+        """
+        Effectively a one loop pass.
+        :return:
+        """
         gevent.idle()
 
 
@@ -253,8 +353,14 @@ class DirectoryService(BaseService):
     def get_service_count(self):
         return len(self._service_manager_directory)
 
-    def get_service(self, name):
-        return self._service_manager_directory.get(name)
+    def get_service(self, alias):
+        return self._service_manager_directory.get(alias).service
+
+    def get_service_meta(self, alias):
+        return self._service_manager_directory.get(alias).service_meta
+
+    def get_service_entry(self, alias):
+        return self._service_manager_directory.get(alias)
 
     def get_outputservice(self):
         return self._service_manager_directory.get("output-service")

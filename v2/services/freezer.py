@@ -1,7 +1,7 @@
 # Lib
-from v2.system.services import BaseService
 from v2.data.processors.resource import ResourceAnalyzer, ResourceStates
 from v2.data.processors.timing_sorter import ResourceTimingSorter
+from v2.services.services import BaseService
 
 # System
 from abc import abstractmethod
@@ -75,6 +75,7 @@ class Freezer250Service(FreezerService):
         self.sleep_time = .25
 
     def get_resource(self):
+        # raise Exception
         return self.queue.get_frozen_250()
 
 

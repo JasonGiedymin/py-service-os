@@ -63,3 +63,4 @@ target/
 # Custom
 LAST.md
 coverage/
+*.ipynb

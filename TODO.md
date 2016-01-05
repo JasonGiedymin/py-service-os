@@ -172,6 +172,7 @@ need ms or ns.
 - [x] delay queue, so that quick cycles are not created within analysis queue. I.e. if a resource is pulled,
       analyzed, and then put back in the queue in the manner of milliseconds then that would cause unnecessary
       cpu timing spent in the loop.
+      - [x] add frozen-50 queue for resources in the interval
       - [x] add frozen-250 queue for resources in the interval 
       - [x] add frozen-500 queue for resources in the interval
       - [x] add frozen-1000 queue for resources in the interval
@@ -183,10 +184,81 @@ need ms or ns.
       - [x] introduce test dealing with delta with regard to reset timing in the sorter
       - [x] fix `RuntimeException: maximum recursion depth exceeded` => found QueueService to have bad method, was
             calling self method.
-- [ ] db part 2
-    - [ ] cassandra
+- [ ] service fail dectection, right now errors and exceptions get swallowed up
+- [*] scheduler enhancements:
+    - [x] allow service metadata to be stored with scheduler
+    - [x] add new method manually specifying service metadata
+    - [x] fix all references to add service with new service metadata
+    - [x] create service_directory entry that combines service and service metadata
+    - [x] allow service start delay within the scheduler
+    - [x] keep track of scheduler restart counts
+    - [x] Allow Scheduler.start and Scheduler.restart of service
+        - [x] enhance scheduler to notice when a stop or start of a service didn't work
+        - [x] replace all `service_directory[alias]` calls with get_service()
+        - [x] renamed retries to starts, which makes more sense
+    - [ ] keep track of services that have exceptions (truely dead)
+        - [x] "Rename _start_services to monitor_services"
+        - [x] fix bug that when exceptions occur the OS service state is set to stop, as I found a log
+              entry that said "... was found already stopped." => made all executioner services run a
+              single pass event loop by calling upon the parent's BaseService.start() method during the
+              CannedOS.bootup() routine.
+        - [x] log services that have exceptions => exceptions are logged in service_meta.exceptions[]
+        - [*] service is truely dead and upon starting reaches retry limit, code `handle_service_exception()`
+            - [x] make universal error_handler, where OS can attach handlers to services as they are added,
+                  having an issue where I made a class but wanted a mixin, figure it out, see canned_os
+                  where I would mix it in, and the `error_handler_test.py`
+            - [x] add handle_service_exception middleware (array of classes with handle() method) that will 
+                  process the exception.
+            - [x] allow set_logger for error handlers, so that service_manager can attach parent logger
+                - [x] add an error_handler factory so we can avoid using protected attributes
+            - [?] allow service_manager to handle exceptions as well? => why exactly? Ideally this
+                  code needs to be highly tested. The service manager doesn't do much. Defer until
+                  more evidence that this is needed.
+            - [x] fix starting services with delay where it will not log started state directly after 
+            - [x] fix to not allow infinite restarts, unless a delay is enacted.
+                - [x] `os.py` uses a delay, and now so does the base_service. Where should a delay be
+                      put? Construct a test to see how async this woks.
+                - [x] fix start delay, it does not actually work
+                    - [x] add new state "Starting", and make service_manager know about it
+                - [x] add functionality to make service_manager know that a service didn't start properly
+                      according to delay, maybe set a timeout? Service start timeout = delay + some base value?
+                      Make meta hold the timeout value, and service hold the time indexes. =>
+                      - [x] finish `did_service_timeout`
+                      - [x] finish `start_time_delta`
+                - [x] redo delay test to actually assert on the time delayed
+                - [x] add test for service start timeout
+                - [x] fix bug where `os_service_delay_test.py` timesout but it shouldn't happen =>
+                      made sure that timeouts had to have a value greater than zero
+                - [x] fix bug where retries were not accounted for during service exceptions => now they
+                      are and will fall through various zombie/dead checks in `os` service manager
+                - [x] fix bug where service is actually in `starting` state rather than started for
+                      `base_service` class test
+                - [x] apply algorithm to service starts which applies the starts count, the algorithm
+                      should have fast restarts up until the 4th or 5th restart where a noticable
+                      time delay should occur => meta now includes reference to function which can be
+                      used else 0 or no delay will be used
+            - [x] add logrithmic delay function to handle sequences of quick restarts =>
+                  done see above scheduler enhancements
+        - [x] fix bug where error handler does not report what error handler class it is reporting an
+              error from
+        - [x] create a test that will test for truely dead services that have exceptions
+              occur within them. => done see above scheduler enhancements
+        - [ ] fix service proxy duplication by removing `directory_service_proxy`, and instead use
+              use `directory_proxy`
+        - [ ] To enable OS stop on error, create ExitOnError error handler to be used when testing or in
+              production. Since BaseService now has ErrorHandlerMixin as part of the class structure we
+              can use the handle error method when an exception occurrs in the CannedOS start or event
+              loop method.
+        
+    - [ ] consider moving enable_recovery into the service_manager from the service itself
+    - [ ] record service failures with meta data
+    - [ ] add os flag to halt on failures
+- [ ] integration test framework (bash script?? makefile??)
 - [ ] queue part 2
     - [ ] kafka queue
+    - [ ] integration test
+- [ ] db part 2
+    - [ ] cassandra
 - [ ] single app cli that can start any number of services
     - [ ] single VM service cat?
 - [ ] resource requestor
@@ -232,10 +304,17 @@ need ms or ns.
 - [ ] stop passing around parent logger, just use lineage or some such
 
 ## Bucket
+- [x] "Rename _start_services to monitor_services"
+      Pull out the anon methods to the either the service entry object or to the service obj 
+      because they need to be tested and the entire monitor service method needs to be 
+      rewritten slightly Add to that monitor_services method 'errored' that will exit 
+      fast or flag a service as bad.
+- [ ] "tick tock timeout"
+      add tick/tock timeout, a timeout which occurs if a single even loop takes longer than expected
 - [ ] "OS Stop on failure"
       Set a flag so that during tests or production the OS can log errors directly
       or halt itself due to an error. This will also be helpful in tests.
-- [ ] "Algo based timing sorter" 
+- [ ] "Algo based timing sorter"
       Each freezer service must implement a get_resource method, but each service uses the
       timing_sorter which itself has direct knowledge of which queue to sort into. Modify the
       sort() method to instead rely on a provided method on the service itself. It would most 

@@ -1,14 +1,13 @@
 # Lib
-from v2.system.services import BaseService
 from v2.data.db import BaseDB, MemDB
+from v2.services.services import BaseService
 
 # System
-import gevent
 
 __author__ = 'jason'
 
 
-class DBService(BaseService, BaseDB):
+class DBService(BaseDB, BaseService):
     """
     Database service proxy.
     """

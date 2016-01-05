@@ -1,8 +1,6 @@
-import requests
-
 # Lib
-from v2.system.services import BaseService
 from v2.data.processors.response_parser import ResponseParser
+from v2.services.services import BaseService
 
 # System
 import gevent
