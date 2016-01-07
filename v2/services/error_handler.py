@@ -12,10 +12,12 @@ class ErrorHandler(object):
         self.log = logger
 
     @abstractmethod
-    def next(self, service_meta):
+    def next(self, service_meta, exception):
         """
-        Method MUST return the service_meta object
+        Method MUST return the service_meta object, but never assume it exists.
+        **Always check if service_meta is not None.**
         :param service_meta:
+        :param exception: the exception that was found
         :return:
         """
         raise NotImplementedError("Please Implement this method")
@@ -81,14 +83,17 @@ class ErrorHandlerMixin:
 
         return handlers
 
-    def handle_error(self):
+    def handle_error(self, exception):
         service_meta = self.get_directory_service_proxy().get_service_meta(self.alias)
 
-        self.log.debug("running error handlers...")
+        if service_meta is not None:
+            service_meta.add_exception(exception)
+
+        self.log.debug("error or exception found, running error handlers...")
 
         for handler in self.error_handlers:
             try:
-                service_meta = handler.next(service_meta)
+                service_meta = handler.next(service_meta, exception)
             except Exception as ex:
                 # Note: this log entry will origininate from a service, so the name will reflect as such,
                 #       NOT from a handler. Don't expect to see this entry's name be that of a handler.

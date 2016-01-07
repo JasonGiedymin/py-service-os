@@ -8,7 +8,7 @@ from v2.system.os import Scheduler
 __author__ = 'jason'
 
 
-class CannedOS(ExecutorService):
+class CannedOS(BaseService):
     """
     OS -> Scheduler -> ServiceManager -> DirectoryService -> UserService
 
@@ -77,9 +77,9 @@ class CannedOS(ExecutorService):
         """
         self.scheduler.add_service(service)
 
-    def event_loop(self):
-        """
-        The event loop.
-        """
-        while self.should_loop():
-            gevent.idle()
+    # def event_loop(self):
+    #     """
+    #     The event loop.
+    #     """
+    #     while self.should_loop():
+    #         gevent.idle()

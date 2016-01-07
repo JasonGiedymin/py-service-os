@@ -9,7 +9,7 @@ from v2.system.states import BaseStates
 from v2.services.error_handler import ErrorHandlerMixin
 from v2.system.exceptions import IdleActionException, ServiceNotIdleException
 from v2.utils.loggers import Logger
-
+from v2.data.simple_data import ServiceMetaData
 
 __author__ = 'jason'
 
@@ -152,7 +152,13 @@ class BaseService(ErrorHandlerMixin):
         self.log.debug("service starting event loop...")
         self.set_state(BaseStates.Started)
         self.time_started_index = time.time()
-        self.event_loop()
+
+        # self.event_loop()
+
+        try:
+            self.event_loop()
+        except Exception as ex:
+            self.handle_error(ex)
 
     def start(self, meta=None):
         if self.get_state() is not BaseStates.Idle:  # or not self.enable_service_recovery:
@@ -287,6 +293,7 @@ class ExecutorService(BaseService):
     These are services which for now are code bundles, that in the future
     could be an event loop processor.
     """
+
     def should_loop(self):
         return False
 
@@ -357,7 +364,11 @@ class DirectoryService(BaseService):
         return self._service_manager_directory.get(alias).service
 
     def get_service_meta(self, alias):
-        return self._service_manager_directory.get(alias).service_meta
+        service = self._service_manager_directory.get(alias)
+        if service is not None:
+            return service.service_meta
+
+        return None
 
     def get_service_entry(self, alias):
         return self._service_manager_directory.get(alias)

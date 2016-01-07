@@ -249,6 +249,15 @@ need ms or ns.
               production. Since BaseService now has ErrorHandlerMixin as part of the class structure we
               can use the handle error method when an exception occurrs in the CannedOS start or event
               loop method.
+              - [ ] `services.py:151` commented out try/except. Failures get logged with it.
+                - [x] Change CannedOSfrom ExecutorService to BaseService => especially since we will
+                      want to shut it down gracefully, will need an event loop for that
+                - [x] However check that it actually logged with some message.  => after modifying `next()`
+                - [x] If it didn't should the CannedOS come with a base error handler? => yes
+                - [x] When adding it, do the messages show up? => see above 
+                - [ ] Can the CannedOS then be set to not run the event loop (exit it on exception)?
+                - [ ] use the CannedOS `should_loop()` to `shutdown` if an exception is detected?
+                
         
     - [ ] consider moving enable_recovery into the service_manager from the service itself
     - [ ] record service failures with meta data

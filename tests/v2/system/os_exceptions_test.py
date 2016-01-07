@@ -64,7 +64,7 @@ class MockErrorHandler(ErrorHandler):
         ErrorHandler.__init__(self)
 
     def next(self, service_meta):
-        self.log.info("TEST! - %s" % service_meta.exceptions)
+        self.log.error("ERROR HANDLER TEST! - %s" % service_meta.exceptions)
         return service_meta
 
 
@@ -119,8 +119,9 @@ def test_services_for_exceptions():
         assert os.scheduler.get_service_manager().get_service_meta("mock-requestor").starts == 1
         assert os.scheduler.get_service_manager().get_service_meta("mock-initializer-service").starts == 1
 
-        # retry limit is set to 2, should only see two exceptions in the list
-        assert len(os.scheduler.get_service_manager().get_service_meta("mock-response-service").exceptions) == 2
+        # retry limit is set to 2, should only see three exceptions in the list
+        # since it will start three times (initial start + two retries) and fail each time.
+        assert len(os.scheduler.get_service_manager().get_service_meta("mock-response-service").exceptions) == 3
 
         os.shutdown()
 
