@@ -13,7 +13,7 @@ os_stop_time = 10
 
 
 class E1(ErrorHandler):
-    def next(self, service_meta):
+    def next(self, service_meta, exception):
         """
         Basic verify that this method was called, use the service meta exception
         list. Not that this is not how you should use the list, I am only using
@@ -26,7 +26,7 @@ class E1(ErrorHandler):
 
 
 class E2(ErrorHandler):
-    def next(self, service_meta):
+    def next(self, service_meta, exception):
         """
         Basic verify that this method was called, use the service meta exception
         list. Not that this is not how you should use the list, I am only using
@@ -39,8 +39,8 @@ class E2(ErrorHandler):
 
 
 class E3(ErrorHandler):
-    def next(self, service_meta):
-        self.log.debug("test 1 2 3")
+    def next(self, service_meta, exception):
+        self.log.debug("Exception E2 Handled...")
         raise Exception("Fake Error!")
 
 
@@ -63,9 +63,10 @@ def test_no_handlers():
     service.set_directory_service_proxy(directory_proxy)
 
     # run the handlers which in this case, are none
-    service.handle_error()
+    service.handle_error(Exception("Something bad happened!"))
 
-    assert len(meta.exceptions) == 0
+    # a single exception will be recorded from the above handle execution
+    assert len(meta.exceptions) == 1
 
 
 def test_error_handler():
@@ -95,11 +96,13 @@ def test_error_handler():
     service.add_error_handler(e1)
     service.add_error_handler(e2)
     # run the handlers
-    service.handle_error()
+    service.handle_error(Exception("Something bad happened!"))
 
-    assert len(meta.exceptions) == 2
-    assert meta.exceptions[0] == "Exception E1 Handled..."
-    assert meta.exceptions[1] == "Exception E2 Handled..."
+    # the mock exception handler commandeer the exception list by adding values
+    # only to test that the class ran
+    assert len(meta.exceptions) == 3
+    assert meta.exceptions[1] == "Exception E1 Handled..."
+    assert meta.exceptions[2] == "Exception E2 Handled..."
 
 
 def test_error_handler_exception():
@@ -123,6 +126,6 @@ def test_error_handler_exception():
 
     try:
         # run the handlers
-        service.handle_error()
+        service.handle_error(Exception("Something bad happened!"))
     except HandlerException as ex:
         print("Found exception for test, test passed as it was expected. Exception: [%s]" % ex)

@@ -9,7 +9,7 @@ from v2.system.states import BaseStates
 from v2.services.error_handler import ErrorHandlerMixin
 from v2.system.exceptions import IdleActionException, ServiceNotIdleException
 from v2.utils.loggers import Logger
-
+from v2.data.simple_data import ServiceMetaData
 
 __author__ = 'jason'
 
@@ -148,11 +148,36 @@ class BaseService(ErrorHandlerMixin):
         now = time.time()
         return now - self.time_starting_index
 
+    def pre_handle_error(self, exception):
+        """
+        Triggered before error handlers have run.
+        This may be overriden for additional functionality.
+        :param exception: An optional exception.
+        :return:
+        """
+        pass
+
+    def post_handle_error(self, exception=None):
+        """
+        Triggered after error handlers have run.
+        This may be overriden for additional functionality.
+        :param exception: An optional exception.
+        :return:
+        """
+        pass
+
     def start_event_loop(self):
         self.log.debug("service starting event loop...")
         self.set_state(BaseStates.Started)
         self.time_started_index = time.time()
-        self.event_loop()
+
+        # self.event_loop()
+
+        try:
+            self.event_loop()
+        except Exception as ex:
+            self.handle_error(ex)
+            self.post_handle_error(ex)  # a built-in method which signals the post event of handling errors
 
     def start(self, meta=None):
         if self.get_state() is not BaseStates.Idle:  # or not self.enable_service_recovery:
@@ -189,6 +214,7 @@ class BaseService(ErrorHandlerMixin):
 
     def stop(self):
         self.log.info("Stopping...")
+        self.set_state(BaseStates.Stopping)
 
         if self.greenlet is not None:
             gevent.kill(self.greenlet)
@@ -223,6 +249,9 @@ class BaseService(ErrorHandlerMixin):
 
     def is_starting(self):
         return self.get_state() is BaseStates.Starting
+
+    def is_stopping(self):
+        return self.get_state() is BaseStates.Stopping
 
     def has_state(self):
         return self.get_state() is not None
@@ -287,6 +316,7 @@ class ExecutorService(BaseService):
     These are services which for now are code bundles, that in the future
     could be an event loop processor.
     """
+
     def should_loop(self):
         return False
 
@@ -357,7 +387,11 @@ class DirectoryService(BaseService):
         return self._service_manager_directory.get(alias).service
 
     def get_service_meta(self, alias):
-        return self._service_manager_directory.get(alias).service_meta
+        service = self._service_manager_directory.get(alias)
+        if service is not None:
+            return service.service_meta
+
+        return None
 
     def get_service_entry(self, alias):
         return self._service_manager_directory.get(alias)

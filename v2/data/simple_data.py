@@ -1,4 +1,5 @@
 from v2.services.retry_delays import no_delay
+import inspect
 
 
 class ServiceMetaData:
@@ -41,16 +42,27 @@ class ServiceMetaData:
         self.failed = False  # this might not be in sync with service state, thus might not be useful at all
 
     def retry_limit_reached(self):
-        # infinite retries
+        # -1 is a setting to allow infinite retries
         if self.retries == -1:
             return False
 
+        # The first time a service starts should not count toward
+        # a retry. Subtract it from starts.
         return (self.starts - 1) >= self.retries
 
     def add_exception(self, exception):
-        # use named arg so that it doesn't throw any errors with exceptions that don't yet
-        # specify it.
-        self.exceptions.append(exception(alias=self.alias))
+        """
+        Add an exception to the list. If passing a class, it must be an exception which takes
+        an alias.
+        :param exception:
+        :return:
+        """
+        if inspect.isclass(exception):
+            # use named arg so that it doesn't throw any errors with exceptions that don't yet
+            # specify it.
+            self.exceptions.append(exception(alias=self.alias))
+        else:
+            self.exceptions.append(exception)
 
     def next_delay(self):
         return self.retry_delay_fx(self.starts)

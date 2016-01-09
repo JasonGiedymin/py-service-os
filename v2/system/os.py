@@ -97,10 +97,10 @@ class ServiceManager(BaseService):
                 pid = service_entry.service.start(service_entry.service_meta)
             except ServiceNotIdleException as service_ex:
                 # TODO: use the finite exception in the future
-                service_entry.service.handle_error()
+                service_entry.service.handle_error(service_ex)
             except Exception as ex:
                 # TODO: use the finite exception in the future
-                service_entry.service.handle_error()
+                service_entry.service.handle_error(ex)
 
             service_entry.service_meta.increment_starts()
             return pid_status(pid)
@@ -110,8 +110,7 @@ class ServiceManager(BaseService):
 
         def remove_service(service_entry):
             service_entry.service.stop()  # attemp to stop if at all possible
-            service_entry.service_meta.add_exception(ServiceTimeout)
-            service_entry.service.handle_error()
+            service_entry.service.handle_error(ServiceTimeout)
 
             service_entry.service.set_state(BaseStates.Stopped)
 
@@ -158,7 +157,7 @@ class ServiceManager(BaseService):
         #     return 0
 
         check_meta(entry)
-        handle(entry)
+        return handle(entry)
 
     def monitor_services(self):
         """

@@ -245,15 +245,26 @@ need ms or ns.
               occur within them. => done see above scheduler enhancements
         - [x] fix service proxy duplication by removing `directory_service_proxy`, and instead use
               use `directory_proxy`
-        - [ ] To enable OS stop on error, create ExitOnError error handler to be used when testing or in
+        - [x] To enable OS stop on error, create ExitOnError error handler to be used when testing or in
               production. Since BaseService now has ErrorHandlerMixin as part of the class structure we
               can use the handle error method when an exception occurrs in the CannedOS start or event
               loop method.
-        
-    - [ ] consider moving enable_recovery into the service_manager from the service itself
-    - [ ] record service failures with meta data
-    - [ ] add os flag to halt on failures
-- [ ] integration test framework (bash script?? makefile??)
+            - [x] `services.py:151` commented out try/except. Failures get logged with it.
+            - [x] Change CannedOS from ExecutorService to BaseService => especially since we will
+                  want to shut it down gracefully, will need an event loop for that
+            - [x] However check that it actually logged with some message.  => after modifying `next()`
+            - [x] If it didn't should the CannedOS come with a base error handler? => yes
+            - [x] When adding it, do the messages show up? => see above 
+            - [x] Can the CannedOS then be set to not run the event loop (exit it on exception)?
+            - [-] use the CannedOS `should_loop()` to `shutdown` if an exception is detected? => created
+                  post event that can be overridden and then set to shutdown the os.
+    - [x] consider moving enable_recovery into the service_manager from the service itself => moved to the
+          `ServiceMetaData` class.
+    - [x] record service failures with meta data => now use starts and metadata stores exceptions in a list
+    - [x] add os flag to halt on failures => using the new post handle method that is overriden one can issue
+          the OS to shutdown. In the fullstop test there is an example where an assertion is done to ensure
+          the os `has_stopped()`.
+- [x] integration test framework (bash script?? makefile??) => uses tox
 - [ ] queue part 2
     - [ ] kafka queue
     - [ ] integration test
@@ -334,3 +345,6 @@ need ms or ns.
 - [ ] create more friendly service supervisor for use with execution like services (may negate the need for below)
 - [ ] truely create a non event loop service (code only)
 - [ ] improve tests using xenon test script or `code_quality.sh` script
+- [ ] "API" 
+      to interact with the OS remotely
+
