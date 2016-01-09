@@ -2,7 +2,7 @@
 import gevent
 
 # lib
-from v2.services.services import BaseService, ExecutorService
+from v2.services.services import BaseService, ExecutorService, BaseStates
 from v2.system.os import Scheduler
 
 __author__ = 'jason'
@@ -51,9 +51,12 @@ class CannedOS(BaseService):
         self.start()  # start self, as an executor service runs one pass and registers as successful
 
     def shutdown(self):
-        self.log.info("shutting down...")
-        self.scheduler.stop()
-        self.stop()
+        if self.is_stopping() or self.has_stopped():
+            self.log.warn("service has already received command to stop, ignoring additional request...")
+        else:
+            self.log.info("shutting down...")
+            self.scheduler.stop()
+            self.stop()
 
     def schedule_service(self, service_class, service_meta, error_handlers=[]):
         """
@@ -76,10 +79,3 @@ class CannedOS(BaseService):
         :return:
         """
         self.scheduler.add_service(service)
-
-    # def event_loop(self):
-    #     """
-    #     The event loop.
-    #     """
-    #     while self.should_loop():
-    #         gevent.idle()

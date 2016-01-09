@@ -1,6 +1,7 @@
 from v2.services.retry_delays import no_delay
 import inspect
 
+
 class ServiceMetaData:
     def __init__(self, alias, delay=0, retries=-1, retry_delay_fx=no_delay,
                  start_timeout=0, recovery_enabled=False):

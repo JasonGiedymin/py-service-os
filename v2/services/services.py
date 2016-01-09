@@ -148,6 +148,24 @@ class BaseService(ErrorHandlerMixin):
         now = time.time()
         return now - self.time_starting_index
 
+    def pre_handle_error(self, exception):
+        """
+        Triggered before error handlers have run.
+        This may be overriden for additional functionality.
+        :param exception: An optional exception.
+        :return:
+        """
+        pass
+
+    def post_handle_error(self, exception=None):
+        """
+        Triggered after error handlers have run.
+        This may be overriden for additional functionality.
+        :param exception: An optional exception.
+        :return:
+        """
+        pass
+
     def start_event_loop(self):
         self.log.debug("service starting event loop...")
         self.set_state(BaseStates.Started)
@@ -159,6 +177,7 @@ class BaseService(ErrorHandlerMixin):
             self.event_loop()
         except Exception as ex:
             self.handle_error(ex)
+            self.post_handle_error(ex)  # a built-in method which signals the post event of handling errors
 
     def start(self, meta=None):
         if self.get_state() is not BaseStates.Idle:  # or not self.enable_service_recovery:
@@ -195,6 +214,7 @@ class BaseService(ErrorHandlerMixin):
 
     def stop(self):
         self.log.info("Stopping...")
+        self.set_state(BaseStates.Stopping)
 
         if self.greenlet is not None:
             gevent.kill(self.greenlet)
@@ -229,6 +249,9 @@ class BaseService(ErrorHandlerMixin):
 
     def is_starting(self):
         return self.get_state() is BaseStates.Starting
+
+    def is_stopping(self):
+        return self.get_state() is BaseStates.Stopping
 
     def has_state(self):
         return self.get_state() is not None

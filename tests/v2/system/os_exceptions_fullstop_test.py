@@ -40,6 +40,10 @@ class BadOS(CannedOS):
     def event_loop(self):
         raise ServiceException("manual OS error - error 123 - seeing this is good!")
 
+    def post_handle_error(self, exception):
+        self.log.info("SHUTDOWN ISSUED - Post Handle Error called!")
+        self.shutdown()
+
 
 def test_services_for_exceptions():
     """
@@ -53,7 +57,8 @@ def test_services_for_exceptions():
     os.bootup()
 
     def stop_os():
-        os.shutdown()
+        assert os.has_stopped() is True
+        os.shutdown()  # this command should execute without failure
 
     # take timing from start to finish
     t1 = time.time()
