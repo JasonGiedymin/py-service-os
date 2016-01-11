@@ -1,0 +1,6 @@
+.cache
+.env
+.git
+.gitignore
+.idea
+.tox
