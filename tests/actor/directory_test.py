@@ -7,8 +7,6 @@ from system.actors.directory import DirectoryActor
 # Helpers
 
 
-# TODO: use ActorMessage, MessageData and send add actor to directory, maybe like "add me"
-
 def create_directory_actor(name):
     return DirectoryActor(name)
 

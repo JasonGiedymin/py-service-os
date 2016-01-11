@@ -46,7 +46,7 @@ def register_mock_github_quickinterval_events(adapter):
             'X-RateLimit-Limit': GLOBAL_MOCK_REQUEST_RATELIMIT,
             'X-RateLimit-Remaining': GLOBAL_MOCK_REQUEST_REMAINING,
             'X-RateLimit-Reset': str(timeutils.seconds() + 60),
-            'X-Poll-Interval': GLOBAL_MOCK_REQUEST_INTERVAL,
+            'X-Poll-Interval': '1',
             'Cache-Control': 'private, max-age=60, s-maxage=60',
             'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
             'ETag': GLOBAL_MOCK_REQUEST_ETAG1

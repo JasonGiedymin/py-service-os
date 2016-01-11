@@ -117,8 +117,6 @@ class BaseService:
         return self._directory_proxy
 
 
-# TODO: actually make this a legit service that uses
-# a queue
 class OutputService(BaseService):
     """
     This is a service which one expects output

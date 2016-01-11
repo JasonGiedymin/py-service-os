@@ -225,7 +225,6 @@ class RequestMachine:
 
     def can_request(self):
         if self.edge_case():
-            # TODO: log error here too
             return False, RequestMachineStates.EdgeCaseError
 
         if self.past_interval():
@@ -284,7 +283,6 @@ class RequestMachine:
                     self._idle_state()
                     return resp
                 else:
-                    # TODO: log here
                     print "Request failed!"
                     print resp.status_code
                     print resp.content

@@ -1,0 +1,28 @@
+Server: GitHub.com
+Date: Thu, 27 Aug 2015 03:13:38 GMT
+Content-Type: application/json; charset=utf-8
+Content-Length: 140842
+Status: 200 OK
+X-RateLimit-Limit: 5000
+X-RateLimit-Remaining: 4994
+X-RateLimit-Reset: 1440648111
+Cache-Control: private, max-age=60, s-maxage=60
+Last-Modified: Wed, 26 Aug 2015 20:13:37 GMT
+ETag: "1fa058896df286d636d0f75c69556f03"
+X-Poll-Interval: 60
+X-OAuth-Scopes: public_repo, user
+X-Accepted-OAuth-Scopes: repo
+Vary: Accept, Authorization, Cookie, X-GitHub-OTP
+X-GitHub-Media-Type: github.v3
+Link: <https://api.github.com/events?page=2>; rel="next", <https://api.github.com/events?page=10>; rel="last"
+X-XSS-Protection: 1; mode=block
+X-Frame-Options: deny
+Content-Security-Policy: default-src 'none'
+Access-Control-Allow-Credentials: true
+Access-Control-Expose-Headers: ETag, Link, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval
+Access-Control-Allow-Origin: *
+X-GitHub-Request-Id: AD311512:496C:B40222:55DE8061
+Strict-Transport-Security: max-age=31536000; includeSubdomains; preload
+X-Content-Type-Options: nosniff
+Vary: Accept-Encoding
+X-Served-By: 318e55760cf7cdb40e61175a4d36cd32

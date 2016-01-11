@@ -54,7 +54,6 @@ class Actor(gevent.Greenlet):
             message = self.inbox.get()
             self.receive(message)
 
-    # TODO: implement Actor.send(), Actor.ask()
     # def send(self, actor, message_data):
 
 

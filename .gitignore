@@ -60,5 +60,7 @@ docs/_build/
 # PyBuilder
 target/
 
-# notes
+# Custom
 LAST.md
+coverage/
+*.ipynb
