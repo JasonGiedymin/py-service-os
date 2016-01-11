@@ -184,7 +184,7 @@ need ms or ns.
       - [x] introduce test dealing with delta with regard to reset timing in the sorter
       - [x] fix `RuntimeException: maximum recursion depth exceeded` => found QueueService to have bad method, was
             calling self method.
-- [ ] service fail dectection, right now errors and exceptions get swallowed up
+- [x] service fail dectection, right now errors and exceptions get swallowed up
 - [*] scheduler enhancements:
     - [x] allow service metadata to be stored with scheduler
     - [x] add new method manually specifying service metadata
@@ -196,7 +196,7 @@ need ms or ns.
         - [x] enhance scheduler to notice when a stop or start of a service didn't work
         - [x] replace all `service_directory[alias]` calls with get_service()
         - [x] renamed retries to starts, which makes more sense
-    - [ ] keep track of services that have exceptions (truely dead)
+    - [x] keep track of services that have exceptions (truely dead)
         - [x] "Rename _start_services to monitor_services"
         - [x] fix bug that when exceptions occur the OS service state is set to stop, as I found a log
               entry that said "... was found already stopped." => made all executioner services run a
@@ -265,11 +265,13 @@ need ms or ns.
           the OS to shutdown. In the fullstop test there is an example where an assertion is done to ensure
           the os `has_stopped()`.
 - [x] integration test framework (bash script?? makefile??) => uses tox
+
+## v0.0.2.2 - Components
 - [ ] queue part 2
     - [ ] kafka queue
     - [ ] integration test
 - [ ] db part 2
-    - [ ] cassandra
+    - [ ] cassandra?
 - [ ] single app cli that can start any number of services
     - [ ] single VM service cat?
 - [ ] resource requestor
