@@ -3,6 +3,11 @@ from v2.data.states import ResourceStates
 
 from uuid import uuid4
 
+DEFAULT_TIME_TO_RESET = 60
+DEFAULT_RATE_LIMIT_REMAINING = 1
+DEFAULT_RATE_LIMIT = 1
+DEFAULT_INTERVAL = 1000
+
 __author__ = 'jason'
 
 
@@ -105,10 +110,10 @@ class ResourceTimings:
         - time_to_reset: in milliseconds
     """
     def __init__(self,
-                 interval=1000,  # interval is in milliseconds
-                 rate_limit=1,
-                 rate_limit_remaining=1,
-                 time_to_reset=60,
+                 interval=DEFAULT_INTERVAL,  # interval is in milliseconds
+                 rate_limit=DEFAULT_RATE_LIMIT,
+                 rate_limit_remaining=DEFAULT_RATE_LIMIT_REMAINING,
+                 time_to_reset=DEFAULT_TIME_TO_RESET,
                  etag=None
                  ):
         self.interval = interval
@@ -184,21 +189,23 @@ class ResourceTimings:
         return 0
 
     def update(self, response, header_keys):
-        def get_value(key, key_type=str):
-            return self.get_header_value(response.headers,
-                                         key,
-                                         key_type)
+        def get_header_value(key, key_type=str, default=""):
+            if key in response.headers:
+                return self.get_header_value_as_type(response.headers,
+                                                     key,
+                                                     key_type)
+            return default
 
-        self.interval = get_value(header_keys.interval, int) * 1000  # convert from seconds to milliseconds
-        self.rate_limit = get_value(header_keys.rate_limit, int)
-        self.rate_limit_remaining = get_value(header_keys.rate_limit_remaining, int)
-        self.time_to_reset = get_value(header_keys.time_to_reset, int) * 1000  # seconds need to convert to milliseconds
-        self.etag = get_value(header_keys.etag)
+        self.interval = get_header_value(header_keys.interval, int, DEFAULT_INTERVAL) * 1000  # convert from seconds to milliseconds
+        self.rate_limit = get_header_value(header_keys.rate_limit, int, DEFAULT_RATE_LIMIT)
+        self.rate_limit_remaining = get_header_value(header_keys.rate_limit_remaining, int, DEFAULT_RATE_LIMIT_REMAINING)
+        self.time_to_reset = get_header_value(header_keys.time_to_reset, int, DEFAULT_TIME_TO_RESET) * 1000  # seconds need to convert to milliseconds
+        self.etag = get_header_value(header_keys.etag, default="")  # todo: hash response content for custom etag, if server won't do it we can
         self.update_timestamp()
         self.update_interval_timestamp()
 
     @staticmethod
-    def get_header_value(headers, header_key, key_type=str):
+    def get_header_value_as_type(headers, header_key, key_type=str):
         if type(key_type) is str:
             return headers.get(header_key)
 

@@ -266,18 +266,26 @@ need ms or ns.
           the os `has_stopped()`.
 - [x] integration test framework (bash script?? makefile??) => uses tox
 
-## v0.0.2.2 - Components
+## v0.0.2.3 - Generic Requests
+- [x] allow generic requests processing
+- [x] allow respones to have no return values, resulting in default values obtained from resource timings
+- [x] test against live system (google.com)
+
+## v0.0.2.4 - Queue
 - [ ] queue part 2
     - [ ] kafka queue
     - [ ] integration test
+
+## v0.0.2.5 - DB
 - [ ] db part 2
     - [ ] cassandra?
+
+## v0.0.2.6 - Cli for starting
 - [ ] single app cli that can start any number of services
     - [ ] single VM service cat?
-- [ ] resource requestor
-    - [ ] do request
-    - [ ] parse response
-- [x] publisher
+
+## v0.0.2.7 - Api for live access
+- [ ] Allow an API for live service modification
 
 ## v0.0.2.0 - RequestMachineMatrix
 - [~] store all vars (request spec, timing, etc...) in a dict, key'ed by uri, allowing
@@ -349,4 +357,6 @@ need ms or ns.
 - [ ] improve tests using xenon test script or `code_quality.sh` script
 - [ ] "API" 
       to interact with the OS remotely
+- [ ] `timings.py`::ResourceTimings->update():203 - consider hashing the response + status code to keep an
+      internal etag
 

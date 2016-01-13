@@ -17,13 +17,14 @@ class ResponseParser(DataProcessor):
     def parse(self, response, resource):
         status_code = response.status_code
 
-        def publish_results(resp, res):
-            content = None
-
+        def get_content(resp, res):
             if res.is_json():
-                content = resp.json()
-            else:
-                content = resp.content
+                return resp.json()
+
+            return resp.content
+
+        def publish_results(resp, res):
+            content = get_content(resp, res)
 
             return True
 

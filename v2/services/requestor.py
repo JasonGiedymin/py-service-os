@@ -67,7 +67,6 @@ class RequestorService(BaseService):
                     "If-None-Match": '%s' % resource.timings.etag
                 })
 
-                # resp = self.session.get("https://api.github.com/events")
                 resp = self.session.get(resource.uri)
                 self.log.info("request complete", status_code=resp.status_code, resource_id=str(resource.id))
                 # self.log.info(resp.headers)
@@ -77,5 +76,4 @@ class RequestorService(BaseService):
                 self.queue.put_publish((resource, resp))
                 self.log.debug("resource put on publish queue for parsing, size: [%d]" % self.queue.publish_size())
 
-            gevent.sleep(2)
             gevent.idle()
