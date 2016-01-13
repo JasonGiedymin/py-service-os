@@ -1,22 +1,4 @@
 import requests
-#
-# session = requests.Session()
-# session.headers = {
-#     'User-Agent': 'DevStats-Machine',
-#     'Authorization': 'token c0698ac78b8f29412f9a358bacd2d34711cdf217'
-# }
-# resp = session.get("https://api.github.com/events")
-#
-# with_etag = {
-#     "If-None-Match": '%s' % resp.headers.get('ETag')
-# }
-#
-# session.headers.update(with_etag)
-#
-# resp = session.get("https://api.github.com/events")
-#
-# print resp.status_code
-# print resp.content
 
 # Lib
 from v2.services.services import BaseService

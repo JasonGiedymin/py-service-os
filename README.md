@@ -1,21 +1,23 @@
-Py-Git-Pub README
+Py-Req-Pub README
 -----------------
 
-This is a simple python app which does the following:
+Python app that seemingly supposed to use an event loop and service paradigm in 
+order to request resources from the internet and then tasked to parse and
+process the resulting content.
 
-  - [ ] Read from the github firehose
-  - [ ] Publishes the data to Kafka raw
-  - [ ] Stats endpoint
-  - [ ] Health endpoint
-  - [ ] Logging
-  - [ ] Commandline params
-  - [ ] Config file
-  - [ ] Distributed? No deploy this specifying a replication controller scale of 1
-  - [ ] Futures/async
+## Commentary
 
-It should not do any data inspection unless for the most absolute basic of
-filtering or statistics. The stats should be meant for health and performance,
-not for data inspection.
+1. There are some references which are shared. This is probably going to lock access to
+   resources but seems to be somewhat minimal.
+1. The service architecture does seem complex to manage. I'd like to see far less
+   framework glue with just raw Actor message passing instead.
+1. Trying to inject gipc or python multithreading at this point is probably
+   a bad idea. Better to use another construct.
+1. At least this framework has an easy to use API and most work is indeed done
+   asynchronously (within a greenlet). Most of the work is nicely segregated
+   and focus sure is made to ensure that each loop is meaningful.
+1. There are lot of other nice gems such as good state control, and meta
+   configuration via a dumb struct.
 
 ## Deps
 This project can make use of pypy.
@@ -99,6 +101,20 @@ It could be done via automation but at the time does not.
 ```shell
 pip freeze > requirements.txt
 ```
+
+### Code Quality
+
+Code quality must have an `A` rating (for what that is worth).
+Aim for 50. Anything above 20 is ok.
+
+The only exception is Test code which is allowed some freedom
+in order to aid in construction of complex test scenarios.
+
+Run the code quality scripts locally: `bash code_quality.sh local`
+Run the code quality scripts meant for CI: `bash code_quality.sh ci`
+Run the code quality scripts meant for CI (against tests): `bash code_quality.sh ci-test`
+
+Run the code quality scripts meant for CI: `bash code_quality.sh ci`
 
 ### Limits
 
