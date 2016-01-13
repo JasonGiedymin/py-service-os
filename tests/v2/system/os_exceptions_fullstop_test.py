@@ -4,21 +4,8 @@ import gevent
 
 # Lib
 from v2.system.canned_os import CannedOS
-from v2.services.freezer import Freezer50Service, Freezer250Service, Freezer500Service, Freezer1000Service
-from v2.services.queue import QueueService
-from v2.services.db import DBService
-from v2.services.analyzer import AnalyzerService
-from v2.services.error_handler import ErrorHandler, ErrorHandlerFactory
-from v2.services.requestor import RequestorService
-from v2.services.response import ResponseParserService
-from v2.services.initializer import InitializerService
-from v2.data.timings import ResourceTimings
-from v2.data.timings import Resource
-from v2.data.simple_data import ServiceMetaData
+from v2.services.error_handler import ErrorHandler
 from v2.system.exceptions import ServiceException
-
-# Test libs
-from tests.v2.system import mock_requests
 
 # Global vars
 os_stop_time = 2

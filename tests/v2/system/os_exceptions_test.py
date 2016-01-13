@@ -8,7 +8,7 @@ from v2.services.freezer import Freezer50Service, Freezer250Service, Freezer500S
 from v2.services.queue import QueueService
 from v2.services.db import DBService
 from v2.services.analyzer import AnalyzerService
-from v2.services.error_handler import ErrorHandler, ErrorHandlerFactory
+from v2.services.error_handler import ErrorHandler
 from v2.services.requestor import RequestorService
 from v2.services.response import ResponseParserService
 from v2.services.initializer import InitializerService

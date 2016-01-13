@@ -200,6 +200,18 @@ def register_mock_github_events(adapter):
         }
     ])
 
+    adapter.register_uri('GET', 'mock://somedomain/withoutheaders', [
+        {
+            'text': json.dumps(data),
+            'status_code': 200,
+            'headers': {
+                'Cache-Control': 'private, max-age=60, s-maxage=60',
+                'Last-Modified': 'Wed, 26 Aug 2015 20:13:37 GMT',
+                'ETag': GLOBAL_MOCK_REQUEST_ETAG1
+            }
+        }
+    ])
+
     return adapter
 
 

@@ -44,5 +44,4 @@ class ResponseParserService(BaseService):
                 self.log.error("resource put on publish error queue, size: [%d]" %
                                self.queue.get_publish_error())
 
-            gevent.sleep(2)
             gevent.idle()
