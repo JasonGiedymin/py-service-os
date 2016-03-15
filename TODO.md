@@ -266,19 +266,6 @@ need ms or ns.
           the os `has_stopped()`.
 - [x] integration test framework (bash script?? makefile??) => uses tox
 
-## v0.0.2.2 - Components
-- [ ] queue part 2
-    - [ ] kafka queue
-    - [ ] integration test
-- [ ] db part 2
-    - [ ] cassandra?
-- [ ] single app cli that can start any number of services
-    - [ ] single VM service cat?
-- [ ] resource requestor
-    - [ ] do request
-    - [ ] parse response
-- [x] publisher
-
 ## v0.0.2.0 - RequestMachineMatrix
 - [~] store all vars (request spec, timing, etc...) in a dict, key'ed by uri, allowing
       multiple requests to be handled by one machine. First pass should be blocking.
@@ -288,65 +275,10 @@ need ms or ns.
 - [x] next up make each get spawn and return a future.
       => services are already accessed via proxies, and by nature are services
 
-## v0.0.3.0 - UniqueClass
-- [?] UniqueService class?
-- [ ] Remove uuid from BaseService to UniqueService and inherit from it
-
-## v0.0.4.0 - Run System
-- [ ] Create app.py and run system
-
-## v0.0.5.0 - Pub to Kafka
-- [ ] Service to publish data to Kafka raw
-
-## v0.0.x.0 - Rest Live Data
-- [ ] Need better logging
-- [ ] rest api to see stats
-- [ ] logging to graphite
-    - [ ] revisit greplin/Cue/scales and turn on gaphited data
-
-## v0.0.x.0 - Service Supervisors and Uptime
-- [ ] Health endpoint
-- [ ] stop only when work is complete
-- [ ] pool request services using gevent pool
-- [?] Create service checker
-    - [ ] allow stop of service and checker keeps up
-
-## v0.0.x.0 - Cleanup
-- [ ] Config file
-- [ ] Commandline params
-- [ ] stop passing around parent logger, just use lineage or some such
-
 ## Bucket
 - [x] "Rename _start_services to monitor_services"
       Pull out the anon methods to the either the service entry object or to the service obj 
       because they need to be tested and the entire monitor service method needs to be 
       rewritten slightly Add to that monitor_services method 'errored' that will exit 
       fast or flag a service as bad.
-- [ ] "tick tock timeout"
-      add tick/tock timeout, a timeout which occurs if a single even loop takes longer than expected
-- [ ] "OS Stop on failure"
-      Set a flag so that during tests or production the OS can log errors directly
-      or halt itself due to an error. This will also be helpful in tests.
-- [ ] "Algo based timing sorter"
-      Each freezer service must implement a get_resource method, but each service uses the
-      timing_sorter which itself has direct knowledge of which queue to sort into. Modify the
-      sort() method to instead rely on a provided method on the service itself. It would most 
-      likely be of great use to also embed into the service the freezing time. This way a generic
-      algorithm can be coded with inputs being freezing time and put_resource() methods.
-- [ ] "First class response object"
-      convert tuple to an class object within the for publish service (response_parser.py)
-- [ ] "Service data check-in"
-       services that die should have an option to store some kind of state, maybe through a interface method
-      `saveState()` so that upon re-animating it will resume from the previous? Maybe discourage this type
-      of state service.
-- [ ] service cop to detect bad behaving services
-    - [ ] may involve the service window timings be accessed via a service proxy rather than directly
-          embedded within the service as it is now, this way the timing state isn't lost when the service
-          is destroyed accidently
-- [ ] modify scheduler to accept timings for future or inteval like work, see if any open py libraries exist
-- [ ] create more friendly service supervisor for use with execution like services (may negate the need for below)
-- [ ] truely create a non event loop service (code only)
-- [ ] improve tests using xenon test script or `code_quality.sh` script
-- [ ] "API" 
-      to interact with the OS remotely
 
