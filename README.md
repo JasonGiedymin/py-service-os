@@ -1,21 +1,7 @@
-Py-Git-Pub README
+README
 -----------------
 
-This is a simple python app which does the following:
-
-  - [ ] Read from the github firehose
-  - [ ] Publishes the data to Kafka raw
-  - [ ] Stats endpoint
-  - [ ] Health endpoint
-  - [ ] Logging
-  - [ ] Commandline params
-  - [ ] Config file
-  - [ ] Distributed? No deploy this specifying a replication controller scale of 1
-  - [ ] Futures/async
-
-It should not do any data inspection unless for the most absolute basic of
-filtering or statistics. The stats should be meant for health and performance,
-not for data inspection.
+This is a simple python app which tries to deal with services, has good logging, and generally very far from what I did end up doing. In the end it was a experiment.
 
 ## Deps
 This project can make use of pypy.
@@ -88,11 +74,6 @@ Usage:
 tox
 ```
 
-## Additional Info
-Most APIs can be and should be driven by tokens.
-This app should use a personal token which is generated manually by the UI.
-It could be done via automation but at the time does not.
-
 ## Development/Usage
 
 ### Generate Requirements
@@ -100,10 +81,3 @@ It could be done via automation but at the time does not.
 pip freeze > requirements.txt
 ```
 
-### Limits
-
-Respect the following http limits from providers:
-
-1. Github - Most github APIs have a rate-limit of 5000 req/hr. Otherwise it will follow the rate limit header.
-    1. `X-RateLimit-Limit` is the limit.
-    1. `X-RateLimit-Remaining` is the remaining limit.
