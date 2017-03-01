@@ -1,7 +1,7 @@
 README
 -----------------
 
-This is a simple python app which tries to deal with services, has good logging, and generally very far from what I did end up doing. In the end it was a experiment.
+This was a simple python application that tries to model the lifecycle of asynchronous services. It has good logging, clean code, and lots of tests. Generally it ended up very far from what I had originally envisioned.
 
 ## Deps
 This project can make use of pypy.
